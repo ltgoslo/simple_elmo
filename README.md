@@ -13,7 +13,7 @@ unzip it first.
 - `model.hdf5`, pre-trained ELMo weights in HDF5 format;
 - `options.json`, description of the model architecture in JSON;
 - `vocab.txt`, one-word-per-line vocabulary of the most frequent words you would like to cache during inference
-(nor really necessary, the model will infer embeddings for OOV words from their characters).
+(not really necessary, the model will infer embeddings for OOV words from their characters).
 
 Use the `elmo_vectors` tensor for your downstream tasks. 
 Its dimensions are: (number of sentences, the length of the longest sentence, ELMo dimensionality).
