@@ -45,7 +45,12 @@ def load_elmo_embeddings(directory, top=False):
     :param top: use ony top ELMo layer
     :return: ELMo batcher, character id placeholders, op object
     """
-    vocab_file = os.path.join(directory, 'vocab.txt.gz')
+    if os.path.isfile(os.path.join(directory, 'vocab.txt.gz')):
+        vocab_file = os.path.join(directory, 'vocab.txt.gz')
+    elif os.path.isfile(os.path.join(directory, 'vocab.txt')):
+        vocab_file = os.path.join(directory, 'vocab.txt')
+    else:
+        raise SystemExit('Error: no vocabulary file found in the directory.')
     options_file = os.path.join(directory, 'options.json')
     weight_file = os.path.join(directory, 'model.hdf5')
 
