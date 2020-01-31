@@ -4,8 +4,10 @@
 import sys
 import re
 import os
+import numpy as np
 import tensorflow as tf
 from bilm import Batcher, BidirectionalLanguageModel, weight_layers
+from sklearn import preprocessing
 
 
 def tokenize(string):
@@ -38,6 +40,25 @@ def get_elmo_vectors(sess, texts, batcher, sentence_character_ids, elmo_sentence
 
     return elmo_sentence_input_
 
+def get_elmo_vector_average(sess, texts, batcher, sentence_character_ids, elmo_sentence_input):
+    vectors = []
+
+    # Create batches of data.
+    sentence_ids = batcher.batch_sentences(texts)
+    print('Sentences in this chunk:', len(texts), file=sys.stderr)
+    # Compute ELMo representations.
+    elmo_sentence_input_ = sess.run(elmo_sentence_input['weighted_op'], feed_dict={sentence_character_ids: sentence_ids})
+    print('ELMo sentence input shape:', elmo_sentence_input_.shape, file=sys.stderr)
+    for sentence in range(len(texts)):
+        sent_vec = np.zeros((elmo_sentence_input_.shape[1], elmo_sentence_input_.shape[2]))
+        for word_vec in enumerate(elmo_sentence_input_[sentence, :, :]):
+            sent_vec[word_vec[0], :] = word_vec[1]
+        semantic_fingerprint = np.sum(sent_vec, axis=0)
+        semantic_fingerprint = np.divide(semantic_fingerprint, sent_vec.shape[0])
+        query_vec = preprocessing.normalize(semantic_fingerprint.reshape(1, -1), norm='l2')
+        vectors.append(query_vec.reshape(-1))
+    return vectors
+
 
 def load_elmo_embeddings(directory, top=False):
     """
@@ -69,3 +90,7 @@ def load_elmo_embeddings(directory, top=False):
     # Get an op to compute ELMo (weighted average of the internal biLM layers)
     elmo_sentence_input = weight_layers('input', sentence_embeddings_op, use_top_only=top)
     return batcher, sentence_character_ids, elmo_sentence_input
+
+def divide_chunks(data, n):
+    for i in range(0, len(data), n):
+        yield data[i:i + n]
