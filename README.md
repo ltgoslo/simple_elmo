@@ -1,7 +1,11 @@
 # Simple ELMo
 Minimal Python code to get vectors from pre-trained ELMo models in TensorFlow.
 
-Heavily based on https://github.com/allenai/bilm-tf
+Heavily based on https://github.com/allenai/bilm-tf. 
+
+The main changes:
+- more convenient data loading (including from compressed files)
+- code adapted to recent TensorFlow versions. 
 
 # Usage example
 If the model is a ZIP archive downloaded from the [NLPL vector repository](http://vectors.nlpl.eu/repository/),
@@ -17,3 +21,18 @@ unzip it first.
 
 Use the `elmo_vectors` tensor for your downstream tasks. 
 Its dimensions are: (number of sentences, the length of the longest sentence, ELMo dimensionality).
+
+# Text classification
+
+Use this code to perform document pair classification (like in text entailment or paraphrase detection).
+
+Simple average of ELMo embeddings for all words in a document is used;
+then, the cosine similarity between two documents is calculated and used as a classifier feature.
+
+Example datasets for Russian (adapted from http://paraphraser.ru/):
+- https://rusvectores.org/static/testsets/paraphrases.tsv.gz
+- https://rusvectores.org/static/testsets/paraphrases_lemm.tsv.gz (lemmatized)
+
+`python3 text_classification.py --input paraphrases_lemm.tsv.gz --elmo ~/PATH_TO_ELMO/`
+
+
