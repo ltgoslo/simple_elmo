@@ -10,7 +10,7 @@ def weight_layers(name, bilm_ops, l2_coef=0.0,
     For each output layer, this returns two ops.  The first computes
         a layer specific weighted average of the biLM layers, and
         the second the l2 regularizer loss term.
-    The regularization terms are also add to tf.GraphKeys.REGULARIZATION_LOSSES
+    The regularization terms are also add to tf.compat.v1.GraphKeys.REGULARIZATION_LOSSES
 
     Input:
         name = a string prefix used for the trainable variable names
@@ -63,7 +63,7 @@ def weight_layers(name, bilm_ops, l2_coef=0.0,
             # no regularization
             reg = 0.0
         else:
-            elmo_weights = tf.get_variable(
+            elmo_weights = tf.compat.v1.get_variable(
                 '{}_ELMo_W'.format(name),
                 shape=(n_lm_layers,),
                 initializer=tf.zeros_initializer,
@@ -89,15 +89,15 @@ def weight_layers(name, bilm_ops, l2_coef=0.0,
 
             # get the regularizer 
             reg = [
-                r for r in tf.get_collection(
-                    tf.GraphKeys.REGULARIZATION_LOSSES)
+                r for r in tf.compat.v1.get_collection(
+                    tf.compat.v1.GraphKeys.REGULARIZATION_LOSSES)
                 if r.name.find('{}_ELMo_W/'.format(name)) >= 0
             ]
             if len(reg) != 1:
                 raise ValueError
 
         # scale the weighted sum by gamma
-        gamma = tf.get_variable(
+        gamma = tf.compat.v1.get_variable(
             '{}_ELMo_gamma'.format(name),
             shape=(1,),
             initializer=tf.ones_initializer,

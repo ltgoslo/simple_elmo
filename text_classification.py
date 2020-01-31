@@ -36,9 +36,9 @@ def classify(data_file, elmo=None, max_batch_size=300, algo='logreg'):
     print('%d sentences total' % (len(sentences0)))
     print('=====')
     # Here we divide all the sentences into several chunks to reduce the batch size
-    with tf.Session() as sess:
+    with tf.compat.v1.Session() as sess:
         # It is necessary to initialize variables once before running inference.
-        sess.run(tf.global_variables_initializer())
+        sess.run(tf.compat.v1.global_variables_initializer())
         for chunk in divide_chunks(sentences0, max_batch_size):
             train0 += get_elmo_vector_average(sess, chunk, batcher, sentence_character_ids,
                                               elmo_sentence_input)

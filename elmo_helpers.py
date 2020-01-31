@@ -40,6 +40,7 @@ def get_elmo_vectors(sess, texts, batcher, sentence_character_ids, elmo_sentence
 
     return elmo_sentence_input_
 
+
 def get_elmo_vector_average(sess, texts, batcher, sentence_character_ids, elmo_sentence_input):
     vectors = []
 
@@ -47,7 +48,8 @@ def get_elmo_vector_average(sess, texts, batcher, sentence_character_ids, elmo_s
     sentence_ids = batcher.batch_sentences(texts)
     print('Sentences in this chunk:', len(texts), file=sys.stderr)
     # Compute ELMo representations.
-    elmo_sentence_input_ = sess.run(elmo_sentence_input['weighted_op'], feed_dict={sentence_character_ids: sentence_ids})
+    elmo_sentence_input_ = sess.run(elmo_sentence_input['weighted_op'],
+                                    feed_dict={sentence_character_ids: sentence_ids})
     print('ELMo sentence input shape:', elmo_sentence_input_.shape, file=sys.stderr)
     for sentence in range(len(texts)):
         sent_vec = np.zeros((elmo_sentence_input_.shape[1], elmo_sentence_input_.shape[2]))
@@ -79,7 +81,7 @@ def load_elmo_embeddings(directory, top=False):
     batcher = Batcher(vocab_file, 50)
 
     # Input placeholders to the biLM.
-    sentence_character_ids = tf.placeholder('int32', shape=(None, None, 50))
+    sentence_character_ids = tf.compat.v1.placeholder('int32', shape=(None, None, 50))
 
     # Build the biLM graph.
     bilm = BidirectionalLanguageModel(options_file, weight_file, max_batch_size=300)
@@ -90,6 +92,7 @@ def load_elmo_embeddings(directory, top=False):
     # Get an op to compute ELMo (weighted average of the internal biLM layers)
     elmo_sentence_input = weight_layers('input', sentence_embeddings_op, use_top_only=top)
     return batcher, sentence_character_ids, elmo_sentence_input
+
 
 def divide_chunks(data, n):
     for i in range(0, len(data), n):
