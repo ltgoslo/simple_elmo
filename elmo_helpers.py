@@ -84,7 +84,7 @@ def load_elmo_embeddings(directory, top=False):
     sentence_character_ids = tf.compat.v1.placeholder('int32', shape=(None, None, 50))
 
     # Build the biLM graph.
-    bilm = BidirectionalLanguageModel(options_file, weight_file, max_batch_size=300)
+    bilm = BidirectionalLanguageModel(options_file, weight_file, max_batch_size=128)
 
     # Get ops to compute the LM embeddings.
     sentence_embeddings_op = bilm(sentence_character_ids)

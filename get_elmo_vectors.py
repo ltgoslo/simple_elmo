@@ -32,9 +32,9 @@ if __name__ == '__main__':
     batcher, sentence_character_ids, elmo_sentence_input = load_elmo_embeddings(args.elmo)
 
     # Actually producing ELMo embeddings for our data:
-    with tf.Session() as sess:
+    with tf.compat.v1.Session() as sess:
         # It is necessary to initialize variables once before running inference.
-        sess.run(tf.global_variables_initializer())
+        sess.run(tf.compat.v1.global_variables_initializer())
         elmo_vectors = get_elmo_vectors(
             sess, sentences, batcher, sentence_character_ids, elmo_sentence_input)
 
