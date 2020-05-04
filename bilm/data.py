@@ -1,4 +1,5 @@
 # originally based on https://github.com/tensorflow/models/tree/master/lm_1b
+import sys
 import glob
 import random
 from smart_open import open
@@ -337,7 +338,7 @@ class LMDataset(object):
         """
         self._vocab = vocab
         self._all_shards = glob.glob(filepattern + '*.gz')
-        print('Found %d shards at %s' % (len(self._all_shards), filepattern))
+        print('Found %d shards at %s' % (len(self._all_shards), filepattern), file=sys.stderr)
         self._shards_to_choose = []
 
         self._reverse = reverse
@@ -382,7 +383,7 @@ class LMDataset(object):
         Returns:
             list of (id, char_id) tuples.
         """
-        print('Loading data from: %s' % shard_name)
+        print('Loading data from: %s' % shard_name, file=sys.stderr)
         with open(shard_name, 'r') as f:
             sentences_raw = f.readlines()
 
@@ -406,8 +407,8 @@ class LMDataset(object):
         else:
             chars_ids = [None] * len(ids)
 
-        print('Loaded %d sentences.' % len(ids))
-        print('Finished loading')
+        print('Loaded %d sentences.' % len(ids), file=sys.stderr)
+        print('Finished loading', file=sys.stderr)
         return list(zip(ids, chars_ids))
 
     def get_sentence(self):
