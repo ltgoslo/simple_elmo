@@ -22,7 +22,7 @@ warnings.filterwarnings("ignore")
 # (adapted from http://paraphraser.ru/)
 
 
-def classify(data_file, elmo=None, max_batch_size=300, algo='logreg'):
+def classify(data_file, elmo=None, algo='logreg', batch_size=300):
     data = pd.read_csv(data_file, sep='\t', compression='gzip')
     print(data.head())
 
@@ -39,10 +39,10 @@ def classify(data_file, elmo=None, max_batch_size=300, algo='logreg'):
     with tf.compat.v1.Session() as sess:
         # It is necessary to initialize variables once before running inference.
         sess.run(tf.compat.v1.global_variables_initializer())
-        for chunk in divide_chunks(sentences0, max_batch_size):
+        for chunk in divide_chunks(sentences0, batch_size):
             train0 += get_elmo_vector_average(sess, chunk, batcher, sentence_character_ids,
                                               elmo_sentence_input)
-        for chunk in divide_chunks(sentences1, max_batch_size):
+        for chunk in divide_chunks(sentences1, batch_size):
             train1 += get_elmo_vector_average(sess, chunk, batcher, sentence_character_ids,
                                               elmo_sentence_input)
 
@@ -100,9 +100,11 @@ if __name__ == '__main__':
     arg = parser.add_argument
     arg('--input', help='Path to tab-separated file with input data', required=True)
     arg('--elmo', required=True, help='Path to ELMo model')
+    arg('--batch', type=int, help='Max batch size', default=300)
 
     args = parser.parse_args()
     data_path = args.input
+    max_batch_size = args.batch
 
-    emb_model = load_elmo_embeddings(args.elmo, top=False)
-    eval_scores = classify(data_path, elmo=emb_model)
+    emb_model = load_elmo_embeddings(args.elmo, top=False, max_batch_size=max_batch_size)
+    eval_scores = classify(data_path, elmo=emb_model, batch_size=max_batch_size)

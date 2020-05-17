@@ -63,7 +63,7 @@ def get_elmo_vector_average(sess, texts, batcher, sentence_character_ids, elmo_s
     return vectors
 
 
-def load_elmo_embeddings(directory, top=False):
+def load_elmo_embeddings(directory, top=False, max_batch_size=128):
     """
     :param directory: directory with an ELMo model ('model.hdf5', 'options.json' and 'vocab.txt.gz')
     :param top: use ony top ELMo layer
@@ -88,7 +88,7 @@ def load_elmo_embeddings(directory, top=False):
     sentence_character_ids = tf.compat.v1.placeholder('int32', shape=(None, None, max_chars))
 
     # Build the biLM graph.
-    bilm = BidirectionalLanguageModel(options_file, weight_file, max_batch_size=128)
+    bilm = BidirectionalLanguageModel(options_file, weight_file, max_batch_size=max_batch_size)
 
     # Get ops to compute the LM embeddings.
     sentence_embeddings_op = bilm(sentence_character_ids)
