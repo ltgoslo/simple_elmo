@@ -80,7 +80,9 @@ def load_elmo_embeddings(directory, top=False, max_batch_size=128):
         but does not require additional disk space
         and allows to load from directories without write permissions.
         """
-        print(message)
+        print(message, file=sys.stderr)
+        if sys.version_info.major < 3 or sys.version_info.minor < 7:
+            raise SystemExit('Error: loading ELMo from ZIP archives requires Python >= 3.7.')
         zf = zipfile.ZipFile(directory)
         vocab_file = zf.open("vocab.txt")
         options_file = zf.open("options.json")
