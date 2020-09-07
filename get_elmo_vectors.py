@@ -27,6 +27,9 @@ if __name__ == '__main__':
     print('%d sentences total' % len(sentences))
     print('=====')
 
+    # We do not use eager execution from TF 2.0
+    tf.compat.v1.disable_eager_execution()
+
     # Loading a pre-trained ELMo model:
     # You can call load_elmo_embeddings() with top=True to use only the top ELMo layer
     batcher, sentence_character_ids, elmo_sentence_input = load_elmo_embeddings(args.elmo)

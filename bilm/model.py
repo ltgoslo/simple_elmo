@@ -517,11 +517,11 @@ class BidirectionalLanguageModelGraph(object):
             for i in range(n_lstm_layers):
                 if projection_dim < lstm_dim:
                     # are projecting down output
-                    lstm_cell = tf.nn.rnn_cell.LSTMCell(
+                    lstm_cell = tf.compat.v1.nn.rnn_cell.LSTMCell(
                         lstm_dim, num_proj=projection_dim,
                         cell_clip=cell_clip, proj_clip=proj_clip)
                 else:
-                    lstm_cell = tf.nn.rnn_cell.LSTMCell(
+                    lstm_cell = tf.compat.v1.nn.rnn_cell.LSTMCell(
                         lstm_dim,
                         cell_clip=cell_clip, proj_clip=proj_clip)
 
@@ -559,7 +559,7 @@ class BidirectionalLanguageModelGraph(object):
                 variable_scope_name = 'RNN_{0}/RNN/MultiRNNCell/Cell{1}'.format(
                     i_direction, i)
                 with tf.compat.v1.variable_scope(variable_scope_name):
-                    layer_output, final_state = tf.nn.dynamic_rnn(
+                    layer_output, final_state = tf.compat.v1.nn.dynamic_rnn(
                         lstm_cell,
                         layer_input,
                         sequence_length=sequence_lengths,
