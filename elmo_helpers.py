@@ -9,6 +9,7 @@ import tensorflow as tf
 from bilm import Batcher, BidirectionalLanguageModel, weight_layers
 from sklearn import preprocessing
 import json
+import zipfile
 
 
 def tokenize(string):
@@ -65,21 +66,40 @@ def get_elmo_vector_average(sess, texts, batcher, sentence_character_ids, elmo_s
 
 def load_elmo_embeddings(directory, top=False, max_batch_size=128):
     """
-    :param directory: directory with an ELMo model ('model.hdf5', 'options.json' and 'vocab.txt.gz')
+    :param directory: directory or a ZIP archive with an ELMo model
+    ('model.hdf5', 'options.json' and 'vocab.txt*' files must be present)
     :param top: use only top ELMo layer
     :param max_batch_size: the maximum allowable batch size during inference
     :return: ELMo batcher, character id placeholders, op object
     """
-    if os.path.isfile(os.path.join(directory, 'vocab.txt.gz')):
-        vocab_file = os.path.join(directory, 'vocab.txt.gz')
-    elif os.path.isfile(os.path.join(directory, 'vocab.txt')):
-        vocab_file = os.path.join(directory, 'vocab.txt')
+
+    if os.path.isfile(directory) and directory.endswith(".zip"):
+        message = """
+        Assuming the model is a ZIP archive downloaded from the NLPL vector repository.
+        Loading a model from a ZIP archive directly is much slower than from the extracted files,
+        but does not require additional disk space
+        and allows to load from directories without write permissions.
+        """
+        print(message)
+        zf = zipfile.ZipFile(directory)
+        vocab_file = zf.open("vocab.txt")
+        options_file = zf.open("options.json")
+        weight_file = zf.open("model.hdf5")
+        m_options = json.load(options_file)
+        options_file.seek(0)
     else:
-        raise SystemExit('Error: no vocabulary file found in the directory.')
-    options_file = os.path.join(directory, 'options.json')
-    weight_file = os.path.join(directory, 'model.hdf5')
-    with open(options_file, 'r') as f:
-        m_options = json.load(f)
+        # We have all the files already extracted in a separate directory
+        if os.path.isfile(os.path.join(directory, 'vocab.txt.gz')):
+            vocab_file = os.path.join(directory, 'vocab.txt.gz')
+        elif os.path.isfile(os.path.join(directory, 'vocab.txt')):
+            vocab_file = os.path.join(directory, 'vocab.txt')
+        else:
+            raise SystemExit('Error: no vocabulary file found in the directory.')
+        options_file = os.path.join(directory, 'options.json')
+        weight_file = os.path.join(directory, 'model.hdf5')
+        with open(options_file, 'r') as of:
+            m_options = json.load(of)
+
     max_chars = m_options['char_cnn']['max_characters_per_token']
 
     # Create a Batcher to map text to character ids.
@@ -96,6 +116,7 @@ def load_elmo_embeddings(directory, top=False, max_batch_size=128):
 
     # Get an op to compute ELMo (weighted average of the internal biLM layers)
     elmo_sentence_input = weight_layers('input', sentence_embeddings_op, use_top_only=top)
+
     return batcher, sentence_character_ids, elmo_sentence_input
 
 

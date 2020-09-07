@@ -1,7 +1,11 @@
+# /bin/env python3
+# coding: utf-8
+
 import json
 import h5py
 import numpy as np
 import tensorflow as tf
+from zipfile import ZipExtFile
 
 from .data import UnicodeCharsVocabulary, Batcher, InvalidNumberOfCharacters
 
@@ -12,7 +16,7 @@ DTYPE_INT = 'int64'
 class BidirectionalLanguageModel(object):
     def __init__(
             self,
-            options_file: str,
+            options_file: (str, ZipExtFile),
             weight_file: str,
             use_character_inputs=True,
             embedding_weight_file=None,
@@ -38,8 +42,12 @@ class BidirectionalLanguageModel(object):
             otherwise use token ids
         max_batch_size: the maximum allowable batch size
         """
-        with open(options_file, 'r') as fin:
-            options = json.load(fin)
+        if type(options_file) == ZipExtFile:
+            options = json.load(options_file)
+            options_file.seek(0)
+        else:
+            with open(options_file, 'r') as of:
+                options = json.load(of)
 
         if not use_character_inputs:
             if embedding_weight_file is None:
@@ -604,8 +612,14 @@ def dump_token_embeddings(vocab_file, options_file, weight_file, outfile):
     outfile.  The result can be used as the embedding_weight_file when
     constructing a BidirectionalLanguageModel.
     """
-    with open(options_file, 'r') as fin:
-        options = json.load(fin)
+
+    if type(options_file) == ZipExtFile:
+        options = json.load(options_file)
+        options_file.seek(0)
+    else:
+        with open(options_file, 'r') as of:
+            options = json.load(of)
+
     max_word_length = options['char_cnn']['max_characters_per_token']
 
     vocab = UnicodeCharsVocabulary(vocab_file, max_word_length)
@@ -639,8 +653,14 @@ def dump_token_embeddings(vocab_file, options_file, weight_file, outfile):
 
 def dump_bilm_embeddings(vocab_file, dataset_file, options_file,
                          weight_file, outfile):
-    with open(options_file, 'r') as fin:
-        options = json.load(fin)
+
+    if type(options_file) == ZipExtFile:
+        options = json.load(options_file)
+        options_file.seek(0)
+    else:
+        with open(options_file, 'r') as of:
+            options = json.load(of)
+
     max_word_length = options['char_cnn']['max_characters_per_token']
 
     vocab = UnicodeCharsVocabulary(vocab_file, max_word_length)
