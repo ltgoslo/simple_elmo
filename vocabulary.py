@@ -1,26 +1,23 @@
-#! python3
+#! /bin/env python3
 
-"""
-This script generates the vocabulary from a plain text file
-"""
+# Simple tool to extract vocabulary from the corpus
+# for training ELMo models
 
 import sys
+from collections import Counter
 
-THRESHOLD = int(sys.argv[1])  # Frequency threshold
+THRESHOLD = int(sys.argv[1])  # How many top frequent words you want to keep?
 
-words = {}
+words = Counter()
 
 for line in sys.stdin:
-    res = line.strip().split()
-    for word in res:
-        if word not in words:
-            words[word] = 0
-        words[word] += 1
+    tokenized = line.strip().split()
+    words.update(tokenized)
 
-print('\n'.join(['<S>', '</S>', '<UNK>']))
+print("\n".join(["<S>", "</S>", "<UNK>"]))
 
-print('Vocabulary:', len(words), file=sys.stderr)
+print(f"Vocabulary size before pruning: {len(words)}", file=sys.stderr)
 
-a = sorted(words, key=words.get, reverse=True)[:THRESHOLD]
+a = words.most_common(THRESHOLD)
 for w in a:
-    print(w)
+    print(w[0])

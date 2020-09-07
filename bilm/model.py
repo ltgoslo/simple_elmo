@@ -611,9 +611,7 @@ def dump_token_embeddings(vocab_file, options_file, weight_file, outfile):
     vocab = UnicodeCharsVocabulary(vocab_file, max_word_length)
     batcher = Batcher(vocab_file, max_word_length)
 
-    ids_placeholder = tf.compat.v1.placeholder('int32',
-                                     shape=(None, None, max_word_length)
-                                     )
+    ids_placeholder = tf.compat.v1.placeholder('int32', shape=(None, None, max_word_length))
     model = BidirectionalLanguageModel(options_file, weight_file)
     embedding_op = model(ids_placeholder)['token_embeddings']
 
@@ -622,9 +620,9 @@ def dump_token_embeddings(vocab_file, options_file, weight_file, outfile):
 
     embeddings = np.zeros((n_tokens, embed_dim), dtype=DTYPE)
 
-    config = tf.ConfigProto(allow_soft_placement=True)
-    with tf.Session(config=config) as sess:
-        sess.run(tf.global_variables_initializer())
+    config = tf.compat.v1.ConfigProto(allow_soft_placement=True)
+    with tf.compat.v1.Session(config=config) as sess:
+        sess.run(tf.compat.v1.global_variables_initializer())
         for k in range(n_tokens):
             token = vocab.id_to_word(k)
             char_ids = batcher.batch_sentences([[token]])[0, 1, :].reshape(
@@ -648,15 +646,13 @@ def dump_bilm_embeddings(vocab_file, dataset_file, options_file,
     vocab = UnicodeCharsVocabulary(vocab_file, max_word_length)
     batcher = Batcher(vocab_file, max_word_length)
 
-    ids_placeholder = tf.compat.v1.placeholder('int32',
-                                     shape=(None, None, max_word_length)
-                                     )
+    ids_placeholder = tf.compat.v1.placeholder('int32', shape=(None, None, max_word_length))
     model = BidirectionalLanguageModel(options_file, weight_file)
     ops = model(ids_placeholder)
 
-    config = tf.ConfigProto(allow_soft_placement=True)
-    with tf.Session(config=config) as sess:
-        sess.run(tf.global_variables_initializer())
+    config = tf.compat.v1.ConfigProto(allow_soft_placement=True)
+    with tf.compat.v1.Session(config=config) as sess:
+        sess.run(tf.compat.v1.global_variables_initializer())
         sentence_id = 0
         with open(dataset_file, 'r') as fin, h5py.File(outfile, 'w') as fout:
             for line in fin:

@@ -1,4 +1,4 @@
-# python3
+# /bin/env python3
 # coding: utf-8
 
 import argparse
@@ -33,7 +33,7 @@ def classify(data_file, elmo=None, algo='logreg', batch_size=300):
     sentences0 = [t.split() for t in data.text0]
     sentences1 = [t.split() for t in data.text1]
     print('=====')
-    print('%d sentences total' % (len(sentences0)))
+    print(f'{len(sentences0)} sentences total')
     print('=====')
     # Here we divide all the sentences into several chunks to reduce the batch size
     with tf.compat.v1.Session() as sess:
@@ -47,10 +47,10 @@ def classify(data_file, elmo=None, algo='logreg', batch_size=300):
                                               elmo_sentence_input)
 
     classes = Counter(y)
-    print('Distribution of classes in the whole sample:', dict(classes))
+    print(f'Distribution of classes in the whole sample: {dict(classes)}')
 
     x_train = [[np.dot(t0, t1)] for t0, t1 in zip(train0, train1)]
-    print('Train shape:', len(x_train))
+    print(f'Train shape: {len(x_train)}')
 
     if algo == 'logreg':
         clf = LogisticRegression(solver='lbfgs', max_iter=2000, multi_class='auto',
@@ -62,6 +62,10 @@ def classify(data_file, elmo=None, algo='logreg', batch_size=300):
     scoring = ['precision_macro', 'recall_macro', 'f1_macro']
     # some splits are containing samples of one class, so we split until the split is OK
     counter = 0
+
+    cv_scores = None
+    cv_scores_dummy = None
+
     while True:
         try:
             cv_scores = cross_validate(clf, x_train, y, cv=10, scoring=scoring)
@@ -83,15 +87,15 @@ def classify(data_file, elmo=None, algo='logreg', batch_size=300):
                      cv_scores_dummy['test_f1_macro'].mean()])
     print('Real scores:')
     print('=====')
-    print('Precision: %0.3f' % scores[0])
-    print('Recall: %0.3f' % scores[1])
-    print('F1: %0.3f' % scores[2])
+    print(f'Precision: {scores[0]:.3f}')
+    print(f'Recall: {scores[1]:.3f}')
+    print(f'F1: {scores[2]:.3f}')
 
     print('Random choice scores:')
     print('=====')
-    print('Precision: %0.3f' % dummy_scores[0])
-    print('Recall: %0.3f' % dummy_scores[1])
-    print('F1: %0.3f' % dummy_scores[2])
+    print(f'Precision: {dummy_scores[0]:.3f}')
+    print(f'Recall: {dummy_scores[1]:.3f}')
+    print(f'F1: {dummy_scores[2]:.3f}')
     return scores
 
 

@@ -1,4 +1,4 @@
-# python3
+# /bin/env python3
 # coding: utf-8
 
 import sys
@@ -16,7 +16,7 @@ def tokenize(string):
     :param string: well, text string
     :return: list of tokens
     """
-    token_pattern = re.compile('(?u)\w+')
+    token_pattern = re.compile(r'(?u)\w+')
     tokens = [t.lower() for t in token_pattern.findall(string)]
     return tokens
 
@@ -33,7 +33,7 @@ def get_elmo_vectors(sess, texts, batcher, sentence_character_ids, elmo_sentence
 
     # Create batches of data.
     sentence_ids = batcher.batch_sentences(texts)
-    print('Sentences in this batch:', len(texts), file=sys.stderr)
+    print(f'Sentences in this batch: {len(texts)}', file=sys.stderr)
 
     # Compute ELMo representations.
     elmo_sentence_input_ = sess.run(elmo_sentence_input['weighted_op'],
@@ -47,11 +47,11 @@ def get_elmo_vector_average(sess, texts, batcher, sentence_character_ids, elmo_s
 
     # Create batches of data.
     sentence_ids = batcher.batch_sentences(texts)
-    print('Sentences in this chunk:', len(texts), file=sys.stderr)
+    print(f'Sentences in this chunk: {len(texts)}', file=sys.stderr)
     # Compute ELMo representations.
     elmo_sentence_input_ = sess.run(elmo_sentence_input['weighted_op'],
                                     feed_dict={sentence_character_ids: sentence_ids})
-    print('ELMo sentence input shape:', elmo_sentence_input_.shape, file=sys.stderr)
+    print(f'ELMo sentence input shape: {elmo_sentence_input_.shape}', file=sys.stderr)
     for sentence in range(len(texts)):
         sent_vec = np.zeros((elmo_sentence_input_.shape[1], elmo_sentence_input_.shape[2]))
         for word_vec in enumerate(elmo_sentence_input_[sentence, :, :]):
@@ -66,7 +66,8 @@ def get_elmo_vector_average(sess, texts, batcher, sentence_character_ids, elmo_s
 def load_elmo_embeddings(directory, top=False, max_batch_size=128):
     """
     :param directory: directory with an ELMo model ('model.hdf5', 'options.json' and 'vocab.txt.gz')
-    :param top: use ony top ELMo layer
+    :param top: use only top ELMo layer
+    :param max_batch_size: the maximum allowable batch size during inference
     :return: ELMo batcher, character id placeholders, op object
     """
     if os.path.isfile(os.path.join(directory, 'vocab.txt.gz')):

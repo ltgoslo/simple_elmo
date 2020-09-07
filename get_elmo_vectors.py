@@ -1,4 +1,4 @@
-# python3
+# /bin/env python3
 # coding: utf-8
 
 import argparse
@@ -24,7 +24,7 @@ if __name__ == '__main__':
     sentences = [tokenize(s) for s in raw_sentences]
 
     print('=====')
-    print('%d sentences total' % len(sentences))
+    print(f'{len(sentences)} sentences total')
     print('=====')
 
     # We do not use eager execution from TF 2.0
@@ -42,7 +42,7 @@ if __name__ == '__main__':
             sess, sentences, batcher, sentence_character_ids, elmo_sentence_input)
 
     print('ELMo embeddings for your input are ready')
-    print('Tensor shape:', elmo_vectors.shape)
+    print(f'Tensor shape: {elmo_vectors.shape}')
 
     # Due to batch processing, the above code produces for each sentence
     # the same number of token vectors, equal to the length of the longest sentence
@@ -58,11 +58,11 @@ if __name__ == '__main__':
     # in each sentence, we find the tokens most similar to the 2nd token of the first sentence
     query_nr = 2
     query_word = sentences[0][query_nr]
-    print('Query sentence:', sentences[0])
-    print('Query:', query_word)
+    print(f'Query sentence: {sentences[0]}')
+    print(f'Query: {query_word}')
     query_vec = cropped_vectors[0][query_nr, :]
 
-    for sent_nr, sent in enumerate(sentences):
+    for sent_nr, sent in enumerate(sentences[:10]): # we are checking the first 10 sentences
         if sent_nr == 0:
             continue
         print('======')
