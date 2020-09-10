@@ -12,13 +12,15 @@ import json
 import zipfile
 
 
-def tokenize(string):
+def tokenize(string, limit=None):
     """
     :param string: well, text string
+    :param limit: max tokens to output
     :return: list of tokens
     """
     token_pattern = re.compile(r'(?u)\w+')
     tokens = [t.lower() for t in token_pattern.findall(string)]
+    tokens = tokens[:limit]
     return tokens
 
 

@@ -14,6 +14,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     data_path = args.input
+    max_sentences = 100
 
     raw_sentences = []
 
@@ -21,11 +22,14 @@ if __name__ == '__main__':
         for line in f:
             res = line.strip()
             raw_sentences.append(res)
-    sentences = [tokenize(s) for s in raw_sentences]
+            if len(raw_sentences) > max_sentences:
+                break
+    sentences = [tokenize(s, limit=100) for s in raw_sentences]
 
     print('=====')
     print(f'{len(sentences)} sentences total')
     print('=====')
+
 
     # We do not use eager execution from TF 2.0
     tf.compat.v1.disable_eager_execution()
@@ -56,7 +60,7 @@ if __name__ == '__main__':
 
     # A quick test:
     # in each sentence, we find the tokens most similar to the 2nd token of the first sentence
-    query_nr = 2
+    query_nr = 0
     query_word = sentences[0][query_nr]
     print(f'Query sentence: {sentences[0]}')
     print(f'Query: {query_word}')
