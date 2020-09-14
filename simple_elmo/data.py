@@ -5,6 +5,7 @@ import random
 from smart_open import open
 import numpy as np
 from typing import List
+import logging
 
 
 class Vocabulary(object):
@@ -338,7 +339,7 @@ class LMDataset(object):
         """
         self._vocab = vocab
         self._all_shards = glob.glob(filepattern + '*.gz')
-        print(f'Found {len(self._all_shards)} shards at {filepattern}', file=sys.stderr)
+        logging.info(f'Found {len(self._all_shards)} shards at {filepattern}')
         self._shards_to_choose = []
 
         self._reverse = reverse
@@ -383,7 +384,7 @@ class LMDataset(object):
         Returns:
             list of (id, char_id) tuples.
         """
-        print(f'Loading data from: {shard_name}', file=sys.stderr)
+        logging.info(f'Loading data from: {shard_name}')
         with open(shard_name, 'r') as f:
             sentences_raw = f.readlines()
 
@@ -407,8 +408,8 @@ class LMDataset(object):
         else:
             chars_ids = [None] * len(ids)
 
-        print(f'Loaded {len(ids)} sentences', file=sys.stderr)
-        print('Finished loading', file=sys.stderr)
+        logging.info(f'Loaded {len(ids)} sentences')
+        logging.info('Finished loading')
         return list(zip(ids, chars_ids))
 
     def get_sentence(self):
