@@ -1,5 +1,5 @@
 name = "simple_elmo"
 from simple_elmo.elmo_helpers import ElmoModel, divide_chunks
-from data import Batcher
-from model import BidirectionalLanguageModel
-from elmo import weight_layers
+from simple_elmo.data import Batcher
+from simple_elmo.model import BidirectionalLanguageModel
+from simple_elmo.elmo import weight_layers

@@ -6,13 +6,13 @@ import re
 import os
 import numpy as np
 import tensorflow as tf
-from data import Batcher
-from model import BidirectionalLanguageModel
-from elmo import weight_layers
 from sklearn import preprocessing
 import json
 import zipfile
 import logging
+from simple_elmo.data import Batcher
+from simple_elmo.model import BidirectionalLanguageModel
+from simple_elmo.elmo import weight_layers
 
 
 class ElmoModel:
@@ -34,7 +34,7 @@ class ElmoModel:
         logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
         self.logger = logging.getLogger(__name__)
 
-    def load(self, directory, top=False, max_batch_size=128):
+    def load(self, directory, top=False, max_batch_size=96):
         # Loading a pre-trained ELMo model:
         # You can call load with top=True to use only the top ELMo layer
         """

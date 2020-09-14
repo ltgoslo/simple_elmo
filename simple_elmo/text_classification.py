@@ -7,9 +7,9 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import cross_validate
 from sklearn.dummy import DummyClassifier
-from elmo_helpers import ElmoModel
 import pandas as pd
 import numpy as np
+from simple_elmo import ElmoModel
 
 # You can use this code to perform document pair classification
 # (like in text entailment or paraphrase detection).

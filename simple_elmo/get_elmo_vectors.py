@@ -2,9 +2,9 @@
 # coding: utf-8
 
 import argparse
-from elmo_helpers import ElmoModel, tokenize
-from smart_open import open
+from simple_elmo import ElmoModel
 import numpy as np
+from smart_open import open
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser()
@@ -27,7 +27,7 @@ if __name__ == '__main__':
             raw_sentences.append(res)
             if len(raw_sentences) > max_sentences:
                 break
-    sentences = [tokenize(s, limit=100) for s in raw_sentences]
+    sentences = [s.split()[:100] for s in raw_sentences]
 
     print('=====')
     print(f'{len(sentences)} sentences total')
@@ -35,7 +35,7 @@ if __name__ == '__main__':
 
     model = ElmoModel()
 
-    model.load(args.elmo, top=True)
+    model.load(args.elmo, top=False)
 
     # Actually producing ELMo embeddings for our data:
 
@@ -57,7 +57,7 @@ if __name__ == '__main__':
     # A quick test:
     # in each sentence, we find the tokens most similar to a given token of a given sentence
     query_sentence_nr = -2
-    query_word_nr = 0
+    query_word_nr = 1
     query_word = sentences[query_sentence_nr][query_word_nr]
     print(f"Query sentence: {sentences[query_sentence_nr]}")
     print(f"Query: {query_word}")

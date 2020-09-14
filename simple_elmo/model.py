@@ -6,8 +6,7 @@ import h5py
 import numpy as np
 import tensorflow as tf
 from zipfile import ZipExtFile
-
-from data import UnicodeCharsVocabulary, Batcher, InvalidNumberOfCharacters
+from simple_elmo.data import UnicodeCharsVocabulary, Batcher, InvalidNumberOfCharacters
 
 DTYPE = 'float32'
 DTYPE_INT = 'int64'
