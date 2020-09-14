@@ -2,7 +2,7 @@
 # coding: utf-8
 
 import argparse
-from elmo_helpers import *
+from elmo_helpers import ElmoModel, tokenize
 from smart_open import open
 import numpy as np
 
@@ -14,7 +14,10 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     data_path = args.input
-    max_sentences = 100
+
+    # Process only the first k sentences
+    # If you need to process more, take care of mini-batching yourself.
+    max_sentences = 1000
 
     raw_sentences = []
 
@@ -30,20 +33,13 @@ if __name__ == '__main__':
     print(f'{len(sentences)} sentences total')
     print('=====')
 
+    model = ElmoModel()
 
-    # We do not use eager execution from TF 2.0
-    tf.compat.v1.disable_eager_execution()
-
-    # Loading a pre-trained ELMo model:
-    # You can call load_elmo_embeddings() with top=True to use only the top ELMo layer
-    batcher, sentence_character_ids, elmo_sentence_input = load_elmo_embeddings(args.elmo)
+    model.load(args.elmo, top=True)
 
     # Actually producing ELMo embeddings for our data:
-    with tf.compat.v1.Session() as sess:
-        # It is necessary to initialize variables once before running inference.
-        sess.run(tf.compat.v1.global_variables_initializer())
-        elmo_vectors = get_elmo_vectors(
-            sess, sentences, batcher, sentence_character_ids, elmo_sentence_input)
+
+    elmo_vectors = model.get_elmo_vectors(sentences)
 
     print('ELMo embeddings for your input are ready')
     print(f'Tensor shape: {elmo_vectors.shape}')
@@ -59,17 +55,18 @@ if __name__ == '__main__':
         cropped_vectors.append(cropped_vector)
 
     # A quick test:
-    # in each sentence, we find the tokens most similar to the 2nd token of the first sentence
-    query_nr = 0
-    query_word = sentences[0][query_nr]
-    print(f'Query sentence: {sentences[0]}')
-    print(f'Query: {query_word}')
-    query_vec = cropped_vectors[0][query_nr, :]
+    # in each sentence, we find the tokens most similar to a given token of a given sentence
+    query_sentence_nr = -2
+    query_word_nr = 0
+    query_word = sentences[query_sentence_nr][query_word_nr]
+    print(f"Query sentence: {sentences[query_sentence_nr]}")
+    print(f"Query: {query_word}")
+    query_vec = cropped_vectors[query_sentence_nr][query_word_nr, :]
 
-    for sent_nr, sent in enumerate(sentences[:10]): # we are checking the first 10 sentences
-        if sent_nr == 0:
-            continue
-        print('======')
+    print(f"Most similar words (dot product values in parentheses)")
+
+    for sent_nr, sent in enumerate(sentences[:10]):  # we are checking the first 10 sentences
+        print("======")
         print(sent)
         sims = {}
         for nr, word in enumerate(sent):

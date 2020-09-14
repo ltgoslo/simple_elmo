@@ -2,13 +2,12 @@
 # coding: utf-8
 
 import argparse
-import warnings
 from collections import Counter
 from sklearn.linear_model import LogisticRegression
 from sklearn.neural_network import MLPClassifier
 from sklearn.model_selection import cross_validate
 from sklearn.dummy import DummyClassifier
-from elmo_helpers import *
+from elmo_helpers import ElmoModel
 import pandas as pd
 import numpy as np
 
@@ -21,31 +20,21 @@ import numpy as np
 # (adapted from http://paraphraser.ru/)
 
 
-def classify(data_file, elmo=None, algo="logreg", batch_size=300):
+def classify(data_file, elmo=None, algo="logreg"):
     data = pd.read_csv(data_file, sep="\t", compression="gzip")
     print(data.head())
 
-    train0 = []
-    train1 = []
     y = data.label.values
-    batcher, sentence_character_ids, elmo_sentence_input = elmo
     sentences0 = [t.split() for t in data.text0]
     sentences1 = [t.split() for t in data.text1]
     print("=====")
     print(f"{len(sentences0)} sentences total")
     print("=====")
-    # Here we divide all the sentences into several chunks to reduce the batch size
-    with tf.compat.v1.Session() as sess:
-        # It is necessary to initialize variables once before running inference.
-        sess.run(tf.compat.v1.global_variables_initializer())
-        for chunk in divide_chunks(sentences0, batch_size):
-            train0 += get_elmo_vector_average(
-                sess, chunk, batcher, sentence_character_ids, elmo_sentence_input
-            )
-        for chunk in divide_chunks(sentences1, batch_size):
-            train1 += get_elmo_vector_average(
-                sess, chunk, batcher, sentence_character_ids, elmo_sentence_input
-            )
+
+    # We use a very simplistic sentence representation setup:
+    # the average of all sentence token embeddings
+    train0 = elmo.get_elmo_vector_average(sentences0)
+    train1 = elmo.get_elmo_vector_average(sentences1)
 
     classes = Counter(y)
     print(f"Distribution of classes in the whole sample: {dict(classes)}")
@@ -109,18 +98,15 @@ def classify(data_file, elmo=None, algo="logreg", batch_size=300):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     arg = parser.add_argument
-    arg("--input", help="Path to tab-separated file with input data", required=True)
-    arg("--elmo", required=True, help="Path to ELMo model")
-    arg("--batch", type=int, help="Max batch size", default=300)
+    arg("--input", "-i", help="Path to tab-separated file with input data", required=True)
+    arg("--elmo", "-e", required=True, help="Path to ELMo model")
+    arg("--batch", "-b", type=int, help="Max batch size", default=300)
 
     args = parser.parse_args()
     data_path = args.input
     max_batch_size = args.batch
 
-    # We do not use eager execution from TF 2.0
-    tf.compat.v1.disable_eager_execution()
+    emb_model = ElmoModel()
+    emb_model.load(args.elmo, top=False, max_batch_size=max_batch_size)
 
-    emb_model = load_elmo_embeddings(
-        args.elmo, top=False, max_batch_size=max_batch_size
-    )
-    eval_scores = classify(data_path, elmo=emb_model, batch_size=max_batch_size)
+    eval_scores = classify(data_path, elmo=emb_model)

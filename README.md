@@ -33,6 +33,6 @@ Example datasets for Russian (adapted from http://paraphraser.ru/):
 - https://rusvectores.org/static/testsets/paraphrases.tsv.gz
 - https://rusvectores.org/static/testsets/paraphrases_lemm.tsv.gz (lemmatized)
 
-`python3 text_classification.py --input paraphrases_lemm.tsv.gz --elmo ~/PATH_TO_ELMO/`
+`python3 text_classification.py -i paraphrases_lemm.tsv.gz -e ~/PATH_TO_ELMO/`
 
 
