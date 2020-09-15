@@ -18,7 +18,7 @@ setuptools.setup(
     extras_require={
         "tf": ["tensorflow>=1.14.0"],
         "tf_gpu": ["tensorflow-gpu>=1.14.0"],
-    }
+    },
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
