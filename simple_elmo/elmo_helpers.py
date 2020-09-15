@@ -133,9 +133,11 @@ class ElmoModel:
     def get_elmo_vector_average(self, texts):
         """
         :param texts: list of sentences (lists of words)
-        :return: list of averaged embeddings for all sentences
+        :return: matrix of averaged embeddings for all sentences
         """
-        average_vectors = []
+        average_vectors = np.zeros((len(texts), self.vector_size))
+
+        counter = 0
 
         with tf.compat.v1.Session() as sess:
             # It is necessary to initialize variables once before running inference.
@@ -161,7 +163,8 @@ class ElmoModel:
                     semantic_fingerprint = np.divide(semantic_fingerprint, sent_vec.shape[0])
                     query_vec = preprocessing.normalize(semantic_fingerprint.reshape(1, -1),
                                                         norm='l2')
-                    average_vectors.append(query_vec.reshape(-1))
+                    average_vectors[counter] = query_vec.reshape(-1)
+                    counter += 1
 
         return average_vectors
 

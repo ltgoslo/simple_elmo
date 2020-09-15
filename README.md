@@ -6,44 +6,68 @@ The main changes are:
 - more convenient and transparent data loading (including from compressed files)
 - code adapted to modern TensorFlow versions (including TensorFlow 2).
 
+# Installation
+
+`pip install --upgrade simple_elmo`
+
+Make sure to update the package regularly, we are actively developing.
+
 # Usage
 
-`pip install simple_elmo`
+ `from simple_elmo import ElmoModel`
 
  `model = ElmoModel()`
 
+## Loading
+ First, let's load a pretrained model from disk:
+
  `model.load(PATH_TO_ELMO)`
 
- `elmo_vectors = model.get_elmo_vectors(SENTENCES)`
- 
-  `averaged_vectors = model.get_elmo_vector_average(SENTENCES)`
+### Required arguments
 
-`PATH_TO_ELMO` is a ZIP archive downloaded from the [NLPL vector repository](http://vectors.nlpl.eu/repository/),
+ **PATH_TO_ELMO** is a ZIP archive downloaded from the [NLPL vector repository](http://vectors.nlpl.eu/repository/),
 OR a directory containing 3 files extracted from such an archive:
 - `model.hdf5`, pre-trained ELMo weights in HDF5 format;
 - `options.json`, description of the model architecture in JSON;
 - `vocab.txt`/`vocab.txt.gz`, one-word-per-line vocabulary of the most frequent words you would like to cache during inference
 (not really necessary, the model will infer embeddings for OOV words from their characters).
 
-`SENTENCES` is a list of sentences (lists of words).
+### Optional arguments
+- **top**: *bool, default False*
+if this parameter is set to True, only the top (last) layer of the model will be used;
+otherwise, the average of all 3 layers is produced.
+- **max_batch_size**: *integer, default 96*
+      the maximum number of sentences/documents in a batch during inference;
+      your input will be automatically split into chunks of the respective size;
+      if your computational resources allow, you might want to increase this value.
 
-Use the `elmo_vectors` and `averaged_vectors` tensors for your downstream tasks. 
+## Working with models
+ Currently, we provide two methods for loaded models (will be expanded in the future):
 
-`elmo_vectors` contains contextualized word embeddings. Its shape is: (number of sentences, the length of the longest sentence, ELMo dimensionality).
+ - `model.get_elmo_vectors(SENTENCES)`
+ 
+ - `model.get_elmo_vector_average(SENTENCES)`
 
-`averaged_vectors` contains one vector per each input sentence, 
+`SENTENCES` is a list of input sentences (lists of words).
+
+The `get_elmo_vectors()` method produces a tensor of contextualized word embeddings.
+Its shape is (number of sentences, the length of the longest sentence, ELMo dimensionality).
+
+The `get_elmo_vector_average()` method produces a tensor with one vector per each input sentence,
 constructed by averaging individual contextualized word embeddings. 
-It is a list of vectors (the shape is (ELMo dimensionality)).
+Its shape is (number of sentences, ELMo dimensionality).
+
+Use these tensors for your downstream tasks.
 
 
 # Example scripts
 
 We provide two example scripts to make it easier to start using _simple_elmo_ right away:
-- [Token embeddings](https://github.com/ltgoslo/simple_elmo/blob/master/simple_elmo/get_elmo_vectors.py)
+- [Inferring token embeddings](https://github.com/ltgoslo/simple_elmo/blob/master/simple_elmo/get_elmo_vectors.py)
  
 `python3 get_elmo_vectors.py -i test.txt -e ~/PATH_TO_ELMO/`
 
-- [Text classification](https://github.com/ltgoslo/simple_elmo/blob/master/simple_elmo/text_classification.py)
+- [Text pairs classification](https://github.com/ltgoslo/simple_elmo/blob/master/simple_elmo/text_classification.py)
 
 `python3 text_classification.py -i paraphrases_lemm.tsv.gz -e ~/PATH_TO_ELMO/`
 
