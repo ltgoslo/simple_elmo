@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="simple_elmo",
-    version="0.3.0",
+    version="0.3.2",
     author="Andrey Kutuzov",
     author_email="andreku@ifi.uio.no",
     description="Handy library to work with pre-trained ELMo embeddings in TensorFlow",
