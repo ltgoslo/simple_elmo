@@ -14,7 +14,7 @@ setuptools.setup(
     url="https://github.com/ltgoslo/simple_elmo",
     packages=setuptools.find_packages(),
     python_requires='>=3.6',
-    install_requires=["tensorflow>1.15", "h5py", "numpy", "smart_open>1.8.1", "pandas",
+    install_requires=["tensorflow>1.14", "h5py", "numpy", "smart_open>1.8.1", "pandas",
                       "scikit-learn"],
     classifiers=[
         "Programming Language :: Python :: 3",
