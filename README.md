@@ -80,6 +80,8 @@ Example paraphrase datasets for Russian (adapted from http://paraphraser.ru/):
 - https://rusvectores.org/static/testsets/paraphrases.tsv.gz
 - https://rusvectores.org/static/testsets/paraphrases_lemm.tsv.gz (lemmatized)
 
-
-The library requires Python >= 3.6.
+# Training your own ELMo
+Currently we provide ELMo training code (updated and improved in the same way compared to the original implementation)
+in a [separate repository](https://github.com/ltgoslo/simple_elmo_training).
+It will be integrated into the `simple_elmo` package in the nearest future.
 

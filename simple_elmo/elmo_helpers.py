@@ -44,6 +44,8 @@ class ElmoModel:
         :param max_batch_size: the maximum allowable batch size during inference
         :return: ELMo batcher, character id placeholders, op object
         """
+        if not os.path.exists(directory):
+            raise SystemExit("Error: model not found!")
         self.batch_size = max_batch_size
         if os.path.isfile(directory) and directory.endswith(".zip"):
             message = """
