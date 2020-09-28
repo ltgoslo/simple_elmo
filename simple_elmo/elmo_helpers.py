@@ -184,7 +184,7 @@ def tokenize(string, limit=None):
     :return: list of tokens
     """
     token_pattern = re.compile(r'(?u)\w+')
-    tokens = [t.lower() for t in token_pattern.findall(string)]
+    tokens = [t for t in token_pattern.findall(string)]
     tokens = tokens[:limit]
     return tokens
 

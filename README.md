@@ -77,9 +77,12 @@ We provide two example scripts to make it easier to start using _simple_elmo_ ri
 `python3 text_classification.py -i paraphrases_lemm.tsv.gz -e ~/PATH_TO_ELMO/`
 
 The second script can be used to perform document pair classification (like in text entailment or paraphrase detection).
-
 Simple average of ELMo embeddings for all words in a document is used;
 then, the cosine similarity between two documents is calculated and used as a classifier feature.
+Evaluated with macro F1 score and 10-fold cross-validation.
+
+Example paraphrase dataset for English (adapted from [MRPC](https://www.microsoft.com/en-us/download/details.aspx?id=52398)):
+- https://rusvectores.org/static/testsets/mrpc.tsv.gz
 
 Example paraphrase datasets for Russian (adapted from http://paraphraser.ru/):
 - https://rusvectores.org/static/testsets/paraphrases.tsv.gz
