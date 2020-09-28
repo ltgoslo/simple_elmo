@@ -1,5 +1,4 @@
-# Simple ELMo
-_simple_elmo_ is a Python library to work with pre-trained [ELMo embeddings](https://allennlp.org/elmo) in TensorFlow.
+_Simple-elmo_ is a Python library to work with pre-trained [ELMo embeddings](https://allennlp.org/elmo) in TensorFlow.
 
 This is a significantly updated wrapper to the [original ELMo implementation](https://github.com/allenai/bilm-tf).
 The main changes are:
@@ -62,7 +61,7 @@ Use these tensors for your downstream tasks.
 
 # Example scripts
 
-We provide two example scripts to make it easier to start using _simple_elmo_ right away:
+We provide two example scripts to make it easier to start using _simple-elmo_ right away:
 - [Inferring token embeddings](https://github.com/ltgoslo/simple_elmo/blob/master/simple_elmo/get_elmo_vectors.py)
  
 `python3 get_elmo_vectors.py -i test.txt -e ~/PATH_TO_ELMO/`
@@ -83,5 +82,5 @@ Example paraphrase datasets for Russian (adapted from http://paraphraser.ru/):
 # Training your own ELMo
 Currently we provide ELMo training code (updated and improved in the same way compared to the original implementation)
 in a [separate repository](https://github.com/ltgoslo/simple_elmo_training).
-It will be integrated into the `simple_elmo` package in the nearest future.
+It will be integrated into the _simple-elmo_ package in the nearest future.
 

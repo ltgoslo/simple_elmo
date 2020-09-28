@@ -56,7 +56,7 @@ class ElmoModel:
             """
             self.logger.info(message)
             if sys.version_info.major < 3 or sys.version_info.minor < 7:
-                raise SystemExit("Error: loading ELMo from ZIP archives requires Python >= 3.7.")
+                raise SystemExit("Error: loading models from ZIP archives requires Python >= 3.7.")
             zf = zipfile.ZipFile(directory)
             vocab_file = zf.open("vocab.txt")
             options_file = zf.open("options.json")
