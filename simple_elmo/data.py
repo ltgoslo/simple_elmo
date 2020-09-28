@@ -1,11 +1,10 @@
 # originally based on https://github.com/tensorflow/models/tree/master/lm_1b
-import sys
 import glob
-import random
-from smart_open import open
-import numpy as np
-from typing import List
 import logging
+import random
+from typing import List
+import numpy as np
+from smart_open import open
 
 
 class Vocabulary(object):
@@ -14,11 +13,13 @@ class Vocabulary(object):
     a method for encoding text to a sequence of ids.
     """
 
-    def __init__(self, filename, validate_file=False):
+    def __init__(self, filename, validate_file=False, limit=None):
         """
-        filename = the vocabulary file.  It is a flat text file with one
+        filename: the vocabulary file.  It is a flat text file with one
             (normalized) token per line.  In addition, the file should also
-            contain the special tokens <S>, </S>, <UNK> (case sensitive).
+            contain the special tokens <S>, </S>, <UNK> (case sensitive). Can be None.
+        limit: process only the first <limit> words from the file; can be useful at inference
+        (we assume the vocabulary is sorted by frequency).
         """
         self._id_to_word = []
         self._word_to_id = {}
@@ -26,23 +27,29 @@ class Vocabulary(object):
         self._bos = -1
         self._eos = -1
 
-        with open(filename, 'r') as f:
-            idx = 0
-            for line in f:
-                word_name = line.strip()
-                if word_name == '<S>':
-                    self._bos = idx
-                elif word_name == '</S>':
-                    self._eos = idx
-                elif word_name == '<UNK>':
-                    self._unk = idx
-                if word_name == '!!!MAXTERMID':
-                    continue
+        if filename:
+            vocab_source = open(filename, 'r')  # Loading vocabulary from file
+        else:
+            logging.info("No vocabulary file provided; using special tokens only.")
+            vocab_source = ["<S>", "</S>", "<UNK>"]  # Creating a toy vocabulary ourselves
+        idx = 0
+        for line in vocab_source:
+            word_name = line.strip()
+            if word_name == '<S>':
+                self._bos = idx
+            elif word_name == '</S>':
+                self._eos = idx
+            elif word_name == '<UNK>':
+                self._unk = idx
+            if word_name == '!!!MAXTERMID':
+                continue
 
-                self._id_to_word.append(word_name)
-                self._word_to_id[word_name] = idx
-                idx += 1
-
+            self._id_to_word.append(word_name)
+            self._word_to_id[word_name] = idx
+            idx += 1
+            if idx == limit:
+                break
+        logging.info(f"We will use the vocabulary of {len(self._id_to_word)} tokens.")
         # check to ensure file has special tokens
         if validate_file:
             if self._bos == -1 or self._eos == -1 or self._unk == -1:
@@ -133,7 +140,7 @@ class UnicodeCharsVocabulary(Vocabulary):
         self._word_char_ids = np.zeros([num_words, max_word_length],
                                        dtype=np.int32)
 
-        # the charcter representation of the begin/end of sentence characters
+        # the character representation of the begin/end of sentence characters
         def _make_bos_eos(c):
             r = np.zeros([self.max_word_length], dtype=np.int32)
             r[:] = self.pad_char
@@ -199,15 +206,15 @@ class Batcher(object):
     Batch sentences of tokenized text into character id matrices.
     """
 
-    def __init__(self, lm_vocab_file: str, max_token_length: int):
+    def __init__(self, lm_vocab_file: str, max_token_length: int, limit=None):
         """
-        lm_vocab_file = the language model vocabulary file (one line per
+        :param lm_vocab_file: the language model vocabulary file (one line per
             token)
-        max_token_length = the maximum number of characters in each token
+        :param max_token_length: the maximum number of characters in each token
+        :param limit: used at inference time to cache only top frequent tokens
         """
         self._lm_vocab = UnicodeCharsVocabulary(
-            lm_vocab_file, max_token_length
-        )
+            lm_vocab_file, max_token_length, limit=limit)
         self._max_token_length = max_token_length
 
     def batch_sentences(self, sentences: List[List[str]]):
@@ -361,7 +368,7 @@ class LMDataset(object):
         if self._test:
             if len(self._all_shards) == 0:
                 # we've loaded all the data
-                # this will propogate up to the generator in get_batch
+                # this will propagate up to the generator in get_batch
                 # and stop iterating
                 raise StopIteration
             else:

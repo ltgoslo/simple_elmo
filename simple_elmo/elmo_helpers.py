@@ -34,7 +34,7 @@ class ElmoModel:
         logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
         self.logger = logging.getLogger(__name__)
 
-    def load(self, directory, top=False, max_batch_size=96):
+    def load(self, directory, top=False, max_batch_size=96, limit=100):
         # Loading a pre-trained ELMo model:
         # You can call load with top=True to use only the top ELMo layer
         """
@@ -42,11 +42,14 @@ class ElmoModel:
         ('model.hdf5', 'options.json' and 'vocab.txt*' files must be present)
         :param top: use only top ELMo layer
         :param max_batch_size: the maximum allowable batch size during inference
+        :param limit: cache only the first <limit> words from the vocabulary file
         :return: ELMo batcher, character id placeholders, op object
         """
         if not os.path.exists(directory):
-            raise SystemExit("Error: model not found!")
+            raise SystemExit(f"Error: path  not found for {directory}!")
         self.batch_size = max_batch_size
+        self.logger.info(f"Loading model from {directory}...")
+
         if os.path.isfile(directory) and directory.endswith(".zip"):
             message = """
             Assuming the model is a ZIP archive downloaded from the NLPL vector repository.
@@ -63,25 +66,28 @@ class ElmoModel:
             weight_file = zf.open("model.hdf5")
             m_options = json.load(options_file)
             options_file.seek(0)
-        else:
+        elif os.path.isdir(directory):
             # We have all the files already extracted in a separate directory
             if os.path.isfile(os.path.join(directory, "vocab.txt.gz")):
                 vocab_file = os.path.join(directory, "vocab.txt.gz")
             elif os.path.isfile(os.path.join(directory, "vocab.txt")):
                 vocab_file = os.path.join(directory, "vocab.txt")
             else:
-                raise SystemExit("Error: no vocabulary file found in the model.")
+                self.logger.info("No vocabulary file found in the model.")
+                vocab_file = None
             options_file = os.path.join(directory, "options.json")
             weight_file = os.path.join(directory, "model.hdf5")
             with open(options_file, 'r') as of:
                 m_options = json.load(of)
+        else:
+            raise SystemExit("Error: either provide a path to a directory with the model "
+                             "or to the model in a ZIP archive.")
 
-        self.logger.info(f"Loading model from {directory}...")
         max_chars = m_options['char_cnn']['max_characters_per_token']
         self.max_chars = max_chars
 
         # Create a Batcher to map text to character ids.
-        self.batcher = Batcher(vocab_file, max_chars)
+        self.batcher = Batcher(vocab_file, max_chars, limit=limit)
 
         # Input placeholders to the biLM.
         self.sentence_character_ids = tf.compat.v1.placeholder(
@@ -125,7 +131,7 @@ class ElmoModel:
                 elmo_vectors = sess.run(self.elmo_sentence_input['weighted_op'],
                                         feed_dict={self.sentence_character_ids: sentence_ids})
                 # Updating the full matrix:
-                first_row = self.batch_size*chunk_counter
+                first_row = self.batch_size * chunk_counter
                 last_row = first_row + elmo_vectors.shape[0]
                 final_vectors[first_row:last_row, :elmo_vectors.shape[1], :] = elmo_vectors
                 chunk_counter += 1

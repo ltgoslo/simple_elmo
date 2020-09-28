@@ -24,12 +24,15 @@ Make sure to update the package regularly, we are actively developing.
 
 ### Required arguments
 
- **PATH_TO_ELMO** is a ZIP archive downloaded from the [NLPL vector repository](http://vectors.nlpl.eu/repository/),
-OR a directory containing 3 files extracted from such an archive:
+ **PATH_TO_ELMO** is either a ZIP archive downloaded from the [NLPL vector repository](http://vectors.nlpl.eu/repository/),
+OR a directory containing 2 files (for example, downloaded from [AllenNLP](https://allennlp.org/elmo)):
 - `model.hdf5`, pre-trained ELMo weights in HDF5 format;
 - `options.json`, description of the model architecture in JSON;
-- `vocab.txt`/`vocab.txt.gz`, one-word-per-line vocabulary of the most frequent words you would like to cache during inference
-(not really necessary, the model will infer embeddings for OOV words from their characters).
+
+Optionally, one can also provide `vocab.txt`/`vocab.txt.gz`: 
+a one-word-per-line vocabulary of words to be cached (as character id representations) before inference.
+Even if it is not present at all, ELMo will still process all words normally.
+However, providing the vocabulary file can slightly increase inference speed when working with very large corpora (by reducing the amount of word to char ids conversions).
 
 ### Optional arguments
 - **top**: *bool, default False*
@@ -39,6 +42,9 @@ otherwise, the average of all 3 layers is produced.
       the maximum number of sentences/documents in a batch during inference;
       your input will be automatically split into chunks of the respective size;
       if your computational resources allow, you might want to increase this value.
+- **limit**: *integer, default 100*
+the number of words from the vocabulary file to actually cache (counted from the first line). 
+Increase the default value if you are sure these words occur in your training data much more often than 1 or 2 times. 
 
 ## Working with models
  Currently, we provide two methods for loaded models (will be expanded in the future):
@@ -83,4 +89,3 @@ Example paraphrase datasets for Russian (adapted from http://paraphraser.ru/):
 Currently we provide ELMo training code (updated and improved in the same way compared to the original implementation)
 in a [separate repository](https://github.com/ltgoslo/simple_elmo_training).
 It will be integrated into the _simple_elmo_ package in the nearest future.
-
