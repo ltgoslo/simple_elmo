@@ -1,6 +1,16 @@
 # /bin/env python3
 # coding: utf-8
 
+# You can use this code to perform document pair classification
+# (like in text entailment or paraphrase detection).
+# Requires scikit-learn
+
+# Example datasets for Russian:
+# https://rusvectores.org/static/testsets/paraphrases.tsv.gz
+# https://rusvectores.org/static/testsets/paraphrases_lemm.tsv.gz
+# (adapted from http://paraphraser.ru/)
+
+
 import argparse
 from collections import Counter
 from sklearn.linear_model import LogisticRegression
@@ -10,14 +20,6 @@ from sklearn.dummy import DummyClassifier
 import pandas as pd
 import numpy as np
 from simple_elmo import ElmoModel
-
-# You can use this code to perform document pair classification
-# (like in text entailment or paraphrase detection).
-
-# Example datasets for Russian:
-# https://rusvectores.org/static/testsets/paraphrases.tsv.gz
-# https://rusvectores.org/static/testsets/paraphrases_lemm.tsv.gz
-# (adapted from http://paraphraser.ru/)
 
 
 def classify(data_file, elmo=None, algo="logreg"):

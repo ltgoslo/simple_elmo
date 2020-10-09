@@ -68,11 +68,11 @@ Use these tensors for your downstream tasks.
 # Example scripts
 
 We provide two example scripts to make it easier to start using _simple_elmo_ right away:
-- [Inferring token embeddings](https://github.com/ltgoslo/simple_elmo/blob/master/simple_elmo/get_elmo_vectors.py)
+- [Inferring token embeddings](https://github.com/ltgoslo/simple_elmo/blob/master/simple_elmo/examples/get_elmo_vectors.py)
  
 `python3 get_elmo_vectors.py -i test.txt -e ~/PATH_TO_ELMO/`
 
-- [Text pairs classification](https://github.com/ltgoslo/simple_elmo/blob/master/simple_elmo/text_classification.py)
+- [Text pairs classification](https://github.com/ltgoslo/simple_elmo/blob/master/simple_elmo/examples/text_classification.py)
 
 `python3 text_classification.py -i paraphrases_lemm.tsv.gz -e ~/PATH_TO_ELMO/`
 

@@ -6,7 +6,6 @@ import re
 import os
 import numpy as np
 import tensorflow as tf
-from sklearn import preprocessing
 import json
 import zipfile
 import logging
@@ -169,8 +168,7 @@ class ElmoModel:
                         sent_vec[word_vec[0], :] = word_vec[1]
                     semantic_fingerprint = np.sum(sent_vec, axis=0)
                     semantic_fingerprint = np.divide(semantic_fingerprint, sent_vec.shape[0])
-                    query_vec = preprocessing.normalize(semantic_fingerprint.reshape(1, -1),
-                                                        norm='l2')
+                    query_vec = semantic_fingerprint / np.linalg.norm(semantic_fingerprint)
                     average_vectors[counter] = query_vec.reshape(-1)
                     counter += 1
 
