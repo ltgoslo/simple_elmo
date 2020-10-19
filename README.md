@@ -38,7 +38,7 @@ However, providing the vocabulary file can slightly increase inference speed whe
 - **top**: *bool, default False*
 if this parameter is set to True, only the top (last) layer of the model will be used;
 otherwise, the average of all 3 layers is produced.
-- **max_batch_size**: *integer, default 96*
+- **max_batch_size**: *integer, default 32*
       the maximum number of sentences/documents in a batch during inference;
       your input will be automatically split into chunks of the respective size;
       if your computational resources allow, you might want to increase this value.

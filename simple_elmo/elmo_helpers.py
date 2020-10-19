@@ -33,7 +33,7 @@ class ElmoModel:
         logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
         self.logger = logging.getLogger(__name__)
 
-    def load(self, directory, top=False, max_batch_size=96, limit=100):
+    def load(self, directory, top=False, max_batch_size=32, limit=100):
         # Loading a pre-trained ELMo model:
         # You can call load with top=True to use only the top ELMo layer
         """
