@@ -103,7 +103,7 @@ Unfortunately not. These models are trained using a slightly different architect
 Therefore, they are [not compatible](https://github.com/HIT-SCIR/ELMoForManyLangs/issues/1#issuecomment-427668469) neither with _AllenNLP_ nor with _simple_elmo_.
 You should use the original [ELMoForManyLangs](https://github.com/HIT-SCIR/ELMoForManyLangs) code to work with these models.
 
-## I see a lot of warnings about deprecated methods
+### I see a lot of warnings about deprecated methods
 
 This is normal. The  _simple_elmo_ library is based on the [original ELMo implementation](https://github.com/allenai/bilm-tf) which was aimed at the versions of TensorFlow which are very outdated today.
 We significantly updated the code and fixed many warnings - but not all of them yet. The work continues (and will eventually lead to a complete switch to TensorFlow 2).
