@@ -115,9 +115,10 @@ class ElmoModel:
 
         return self.batcher, self.sentence_character_ids, self.elmo_sentence_input, self.batch_size
 
-    def get_elmo_vectors(self, texts):
+    def get_elmo_vectors(self, texts, warmup=True):
         """
         :param texts: list of sentences (lists of words)
+        :param warmup: warm up the model before actual inference (by running it over the 1st batch)
         :return: embedding matrix for all sentences (max word count by vector size)
         """
 
@@ -129,6 +130,9 @@ class ElmoModel:
         with tf.compat.v1.Session() as sess:
             # It is necessary to initialize variables once before running inference.
             sess.run(tf.compat.v1.global_variables_initializer())
+
+            if warmup:
+                self.warmup(sess, texts)
 
             # Running batches:
             chunk_counter = 0
@@ -148,9 +152,10 @@ class ElmoModel:
 
             return final_vectors
 
-    def get_elmo_vector_average(self, texts):
+    def get_elmo_vector_average(self, texts, warmup=True):
         """
         :param texts: list of sentences (lists of words)
+        :param warmup: warm up the model before actual inference (by running it over the 1st batch)
         :return: matrix of averaged embeddings for all sentences
         """
         average_vectors = np.zeros((len(texts), self.vector_size))
@@ -160,6 +165,9 @@ class ElmoModel:
         with tf.compat.v1.Session() as sess:
             # It is necessary to initialize variables once before running inference.
             sess.run(tf.compat.v1.global_variables_initializer())
+
+            if warmup:
+                self.warmup(sess, texts)
 
             # Running batches:
             for chunk in divide_chunks(texts, self.batch_size):
@@ -185,6 +193,20 @@ class ElmoModel:
 
         return average_vectors
 
+    def warmup(self, sess, texts):
+        for chunk0 in divide_chunks(texts, self.batch_size):
+            self.logger.info(f"Warming up ELMo on {len(chunk0)} sentences...")
+            sentence_ids = self.batcher.batch_sentences(chunk0)
+            _ = sess.run(self.elmo_sentence_input['weighted_op'],
+                         feed_dict={self.sentence_character_ids: sentence_ids})
+            break
+        self.logger.info("Warming up finished.")
+
+
+def divide_chunks(data, n):
+    for i in range(0, len(data), n):
+        yield data[i:i + n]
+
 
 def tokenize(string, limit=None):
     """
@@ -198,6 +220,4 @@ def tokenize(string, limit=None):
     return tokens
 
 
-def divide_chunks(data, n):
-    for i in range(0, len(data), n):
-        yield data[i:i + n]
+
