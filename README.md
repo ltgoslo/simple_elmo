@@ -25,8 +25,9 @@ Make sure to update the package regularly, we are actively developing.
 ### Required arguments
 
  **PATH_TO_ELMO** is either a ZIP archive downloaded from the [NLPL vector repository](http://vectors.nlpl.eu/repository/),
-OR a directory containing 2 files (for example, downloaded from [AllenNLP](https://allennlp.org/elmo)):
-- `model.hdf5`, pre-trained ELMo weights in HDF5 format;
+OR a directory containing 2 files (for example, downloaded from [AllenNLP](https://allennlp.org/elmo) or from [CLARIN](https://www.clarin.si/repository/xmlui/handle/11356/1277)):
+- `*.hdf5`, pre-trained ELMo weights in HDF5 format (_simple_elmo_ assumes the file is named `model.hdf5`;
+if it is not found, the first existing file with the `.hdf5` extension will be used);
 - `options.json`, description of the model architecture in JSON;
 
 Optionally, one can also provide `vocab.txt`/`vocab.txt.gz`: 

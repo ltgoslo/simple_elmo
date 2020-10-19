@@ -38,7 +38,7 @@ class ElmoModel:
         # You can call load with top=True to use only the top ELMo layer
         """
         :param directory: directory or a ZIP archive with an ELMo model
-        ('model.hdf5', 'options.json' and 'vocab.txt*' files must be present)
+        ('*.hdf5' and 'options.json' files must be present)
         :param top: use only top ELMo layer
         :param max_batch_size: the maximum allowable batch size during inference
         :param limit: cache only the first <limit> words from the vocabulary file
@@ -74,16 +74,27 @@ class ElmoModel:
             else:
                 self.logger.info("No vocabulary file found in the model.")
                 vocab_file = None
+            if os.path.exists(os.path.join(directory, "model.hdf5")):
+                weight_file = os.path.join(directory, "model.hdf5")
+            else:
+                weight_files = [fl for fl in os.listdir(directory) if fl.endswith(".hdf5")]
+                if not weight_files:
+                    raise SystemExit(
+                        f"Error: no HDF5 model files found in the {directory} directory!")
+                weight_file = os.path.join(directory, weight_files[0])
+                self.logger.info(f"No model.hdf5 file found. Using {weight_file} as a model file.")
             options_file = os.path.join(directory, "options.json")
-            weight_file = os.path.join(directory, "model.hdf5")
             with open(options_file, 'r') as of:
                 m_options = json.load(of)
         else:
             raise SystemExit("Error: either provide a path to a directory with the model "
                              "or to the model in a ZIP archive.")
 
-        max_chars = m_options['char_cnn']['max_characters_per_token']
+        max_chars = m_options["char_cnn"]["max_characters_per_token"]
         self.max_chars = max_chars
+        if m_options["char_cnn"]["n_characters"] == 261:
+            raise SystemExit("Error: invalid number of characters in the options.json file: 261. "
+                             "Set n_characters to 262 for inference.")
 
         # Create a Batcher to map text to character ids.
         self.batcher = Batcher(vocab_file, max_chars, limit=limit)

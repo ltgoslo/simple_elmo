@@ -102,7 +102,7 @@ if __name__ == "__main__":
     arg = parser.add_argument
     arg("--input", "-i", help="Path to tab-separated file with input data", required=True)
     arg("--elmo", "-e", required=True, help="Path to ELMo model")
-    arg("--batch", "-b", type=int, help="Max batch size", default=300)
+    arg("--batch", "-b", type=int, help="Max batch size", default=128)
 
     args = parser.parse_args()
     data_path = args.input
