@@ -25,7 +25,7 @@ Make sure to update the package regularly, we are actively developing.
 ### Required arguments
 
  **PATH_TO_ELMO** is either a ZIP archive downloaded from the [NLPL vector repository](http://vectors.nlpl.eu/repository/),
-OR a directory containing 2 files (for example, downloaded from [AllenNLP](https://allennlp.org/elmo) or from [CLARIN](https://www.clarin.si/repository/xmlui/handle/11356/1277)):
+OR a directory containing 2 files:
 - `*.hdf5`, pre-trained ELMo weights in HDF5 format (_simple_elmo_ assumes the file is named `model.hdf5`;
 if it is not found, the first existing file with the `.hdf5` extension will be used);
 - `options.json`, description of the model architecture in JSON;
@@ -65,7 +65,6 @@ Its shape is (number of sentences, ELMo dimensionality).
 
 Use these tensors for your downstream tasks.
 
-
 # Example scripts
 
 We provide two example scripts to make it easier to start using _simple_elmo_ right away:
@@ -89,7 +88,30 @@ Example paraphrase datasets for Russian (adapted from http://paraphraser.ru/):
 - https://rusvectores.org/static/testsets/paraphrases.tsv.gz
 - https://rusvectores.org/static/testsets/paraphrases_lemm.tsv.gz (lemmatized)
 
-# Training your own ELMo
+# Frequently Asked Questions
+### Where can I find pre-trained ELMo models?
+
+Several repositories are available where one can download ELMo models compatible with _simple_elmo_:
+- [NLPL vector repository](http://vectors.nlpl.eu/repository/)
+(except _ELMoForManyLangs_ models trained on the CoNLL17 corpus; see below)
+- [AllenNLP](https://allennlp.org/elmo)
+- [CLARIN](https://www.clarin.si/repository/xmlui/handle/11356/1277)
+
+### Can I load [ELMoForManyLangs](https://github.com/HIT-SCIR/ELMoForManyLangs) models?
+
+Unfortunately not. These models are trained using a slightly different architecture.
+Therefore, they are [not compatible](https://github.com/HIT-SCIR/ELMoForManyLangs/issues/1#issuecomment-427668469) neither with _AllenNLP_ nor with _simple_elmo_.
+You should use the original [ELMoForManyLangs](https://github.com/HIT-SCIR/ELMoForManyLangs) code to work with these models.
+
+## I see a lot of warnings about deprecated methods
+
+This is normal. The  _simple_elmo_ library is based on the [original ELMo implementation](https://github.com/allenai/bilm-tf) which was aimed at the versions of TensorFlow which are very outdated today.
+We significantly updated the code and fixed many warnings - but not all of them yet. The work continues (and will eventually lead to a complete switch to TensorFlow 2).
+
+Meaniwhile, these warnings can be ignored: they do not harm the resulting embeddings in any way.
+
+### Can I train my own ELMo with this library?
+
 Currently we provide ELMo training code (updated and improved in the same way compared to the original implementation)
 in a [separate repository](https://github.com/ltgoslo/simple_elmo_training).
 It will be integrated into the _simple_elmo_ package in the nearest future.
