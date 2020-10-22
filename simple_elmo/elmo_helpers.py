@@ -29,7 +29,9 @@ class ElmoModel:
         # We do not use eager execution from TF 2.0
         tf.compat.v1.disable_eager_execution()
 
-        logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.INFO)
+        logging.basicConfig(
+            format="%(asctime)s : %(levelname)s : %(message)s", level=logging.INFO
+        )
         self.logger = logging.getLogger(__name__)
 
     def load(self, directory, top=False, max_batch_size=32, limit=100):
@@ -57,7 +59,9 @@ class ElmoModel:
             """
             self.logger.info(message)
             if sys.version_info.major < 3 or sys.version_info.minor < 7:
-                raise SystemExit("Error: loading models from ZIP archives requires Python >= 3.7.")
+                raise SystemExit(
+                    "Error: loading models from ZIP archives requires Python >= 3.7."
+                )
             zf = zipfile.ZipFile(directory)
             vocab_file = zf.open("vocab.txt")
             options_file = zf.open("options.json")
@@ -76,43 +80,62 @@ class ElmoModel:
             if os.path.exists(os.path.join(directory, "model.hdf5")):
                 weight_file = os.path.join(directory, "model.hdf5")
             else:
-                weight_files = [fl for fl in os.listdir(directory) if fl.endswith(".hdf5")]
+                weight_files = [
+                    fl for fl in os.listdir(directory) if fl.endswith(".hdf5")
+                ]
                 if not weight_files:
                     raise SystemExit(
-                        f"Error: no HDF5 model files found in the {directory} directory!")
+                        f"Error: no HDF5 model files found in the {directory} directory!"
+                    )
                 weight_file = os.path.join(directory, weight_files[0])
-                self.logger.info(f"No model.hdf5 file found. Using {weight_file} as a model file.")
+                self.logger.info(
+                    f"No model.hdf5 file found. Using {weight_file} as a model file."
+                )
             options_file = os.path.join(directory, "options.json")
-            with open(options_file, 'r') as of:
+            with open(options_file, "r") as of:
                 m_options = json.load(of)
         else:
-            raise SystemExit("Error: either provide a path to a directory with the model "
-                             "or to the model in a ZIP archive.")
+            raise SystemExit(
+                "Error: either provide a path to a directory with the model "
+                "or to the model in a ZIP archive."
+            )
 
         max_chars = m_options["char_cnn"]["max_characters_per_token"]
         self.max_chars = max_chars
         if m_options["char_cnn"]["n_characters"] == 261:
-            raise SystemExit("Error: invalid number of characters in the options.json file: 261. "
-                             "Set n_characters to 262 for inference.")
+            raise SystemExit(
+                "Error: invalid number of characters in the options.json file: 261. "
+                "Set n_characters to 262 for inference."
+            )
 
         # Create a Batcher to map text to character ids.
         self.batcher = Batcher(vocab_file, max_chars, limit=limit)
 
         # Input placeholders to the biLM.
         self.sentence_character_ids = tf.compat.v1.placeholder(
-            'int32', shape=(None, None, max_chars))
+            "int32", shape=(None, None, max_chars)
+        )
 
         # Build the biLM graph.
-        bilm = BidirectionalLanguageModel(options_file, weight_file, max_batch_size=max_batch_size)
-        self.vector_size = int(bilm.options['lstm']['projection_dim'] * 2)
+        bilm = BidirectionalLanguageModel(
+            options_file, weight_file, max_batch_size=max_batch_size
+        )
+        self.vector_size = int(bilm.options["lstm"]["projection_dim"] * 2)
 
         # Get ops to compute the LM embeddings.
         sentence_embeddings_op = bilm(self.sentence_character_ids)
 
         # Get an op to compute ELMo (weighted average of the internal biLM layers)
-        self.elmo_sentence_input = weight_layers('input', sentence_embeddings_op, use_top_only=top)
+        self.elmo_sentence_input = weight_layers(
+            "input", sentence_embeddings_op, use_top_only=top
+        )
 
-        return self.batcher, self.sentence_character_ids, self.elmo_sentence_input, self.batch_size
+        return (
+            self.batcher,
+            self.sentence_character_ids,
+            self.elmo_sentence_input,
+            self.batch_size,
+        )
 
     def get_elmo_vectors(self, texts, warmup=True):
         """
@@ -141,12 +164,16 @@ class ElmoModel:
                 self.logger.info(f"Texts in the current batch: {len(chunk)}")
 
                 # Compute ELMo representations.
-                elmo_vectors = sess.run(self.elmo_sentence_input['weighted_op'],
-                                        feed_dict={self.sentence_character_ids: sentence_ids})
+                elmo_vectors = sess.run(
+                    self.elmo_sentence_input["weighted_op"],
+                    feed_dict={self.sentence_character_ids: sentence_ids},
+                )
                 # Updating the full matrix:
                 first_row = self.batch_size * chunk_counter
                 last_row = first_row + elmo_vectors.shape[0]
-                final_vectors[first_row:last_row, :elmo_vectors.shape[1], :] = elmo_vectors
+                final_vectors[
+                first_row:last_row, : elmo_vectors.shape[1], :
+                ] = elmo_vectors
                 chunk_counter += 1
 
             return final_vectors
@@ -175,8 +202,10 @@ class ElmoModel:
                 self.logger.info(f"Sentences in this batch: {len(chunk)}")
 
                 # Compute ELMo representations.
-                elmo_vectors = sess.run(self.elmo_sentence_input['weighted_op'],
-                                        feed_dict={self.sentence_character_ids: sentence_ids})
+                elmo_vectors = sess.run(
+                    self.elmo_sentence_input["weighted_op"],
+                    feed_dict={self.sentence_character_ids: sentence_ids},
+                )
 
                 self.logger.debug(f"ELMo sentence input shape: {elmo_vectors.shape}")
 
@@ -185,8 +214,12 @@ class ElmoModel:
                     for word_vec in enumerate(elmo_vectors[sentence, :, :]):
                         sent_vec[word_vec[0], :] = word_vec[1]
                     semantic_fingerprint = np.sum(sent_vec, axis=0)
-                    semantic_fingerprint = np.divide(semantic_fingerprint, sent_vec.shape[0])
-                    query_vec = semantic_fingerprint / np.linalg.norm(semantic_fingerprint)
+                    semantic_fingerprint = np.divide(
+                        semantic_fingerprint, sent_vec.shape[0]
+                    )
+                    query_vec = semantic_fingerprint / np.linalg.norm(
+                        semantic_fingerprint
+                    )
                     average_vectors[counter] = query_vec.reshape(-1)
                     counter += 1
 
@@ -196,16 +229,14 @@ class ElmoModel:
         for chunk0 in divide_chunks(texts, self.batch_size):
             self.logger.info(f"Warming up ELMo on {len(chunk0)} sentences...")
             sentence_ids = self.batcher.batch_sentences(chunk0)
-            _ = sess.run(self.elmo_sentence_input['weighted_op'],
-                         feed_dict={self.sentence_character_ids: sentence_ids})
+            _ = sess.run(
+                self.elmo_sentence_input["weighted_op"],
+                feed_dict={self.sentence_character_ids: sentence_ids},
+            )
             break
         self.logger.info("Warming up finished.")
 
 
 def divide_chunks(data, n):
     for i in range(0, len(data), n):
-        yield data[i:i + n]
-
-
-
-
+        yield data[i: i + n]

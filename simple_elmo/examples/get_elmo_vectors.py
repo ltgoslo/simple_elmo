@@ -6,22 +6,23 @@ from simple_elmo import ElmoModel
 import numpy as np
 from smart_open import open
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     arg = parser.add_argument
-    arg('--input', '-i', help='Path to input text, one sentence per line', required=True)
-    arg('--elmo', '-e', help='Path to ELMo model', required=True)
+    arg(
+        "--input", "-i", help="Path to input text, one sentence per line", required=True
+    )
+    arg("--elmo", "-e", help="Path to ELMo model", required=True)
 
     args = parser.parse_args()
     data_path = args.input
 
     # Process only the first k sentences
-    # If you need to process more, take care of mini-batching yourself.
     max_sentences = 1000
 
     raw_sentences = []
 
-    with open(data_path, 'r') as f:
+    with open(data_path, "r") as f:
         for line in f:
             res = line.strip()
             raw_sentences.append(res)
@@ -29,9 +30,9 @@ if __name__ == '__main__':
                 break
     sentences = [s.split()[:100] for s in raw_sentences]
 
-    print('=====')
-    print(f'{len(sentences)} sentences total')
-    print('=====')
+    print("=====")
+    print(f"{len(sentences)} sentences total")
+    print("=====")
 
     model = ElmoModel()
 
@@ -41,8 +42,8 @@ if __name__ == '__main__':
 
     elmo_vectors = model.get_elmo_vectors(sentences)
 
-    print('ELMo embeddings for your input are ready')
-    print(f'Tensor shape: {elmo_vectors.shape}')
+    print("ELMo embeddings for your input are ready")
+    print(f"Tensor shape: {elmo_vectors.shape}")
 
     # Due to batch processing, the above code produces for each sentence
     # the same number of token vectors, equal to the length of the longest sentence
@@ -51,7 +52,7 @@ if __name__ == '__main__':
     # Let's make a version without these redundant vectors:
     cropped_vectors = []
     for vect, sent in zip(elmo_vectors, sentences):
-        cropped_vector = vect[:len(sent), :]
+        cropped_vector = vect[: len(sent), :]
         cropped_vectors.append(cropped_vector)
 
     # A quick test:
@@ -65,7 +66,8 @@ if __name__ == '__main__':
 
     print(f"Most similar words (dot product values in parentheses)")
 
-    for sent_nr, sent in enumerate(sentences[:10]):  # we are checking the first 10 sentences
+    for sent_nr, sent in enumerate(
+        sentences[:10]):  # we are checking the first 10 sentences
         print("======")
         print(sent)
         sims = {}

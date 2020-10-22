@@ -11,6 +11,17 @@ import operator
 import re
 from simple_elmo import ElmoModel
 
+# You can use this code to evaluate word sense disambiguation abilities of ELMo models
+# Requires scikit-learn
+
+# Example WSD datasets for English (adapted from Senseval 3):
+# https://rusvectores.org/static/testsets/senseval3.tsv
+# https://rusvectores.org/static/testsets/senseval3_lemm.tsv (lemmatized)
+
+# Example WSD datasets for Russian (adapted from RUSSE'18):
+# https://rusvectores.org/static/testsets/russe_wsd.tsv
+# https://rusvectores.org/static/testsets/russe_wsd_lemm.tsv (lemmatized)
+
 
 def tokenize(string, limit=None):
     """

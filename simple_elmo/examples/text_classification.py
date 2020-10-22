@@ -66,8 +66,7 @@ def classify(data_file, elmo=None, algo="logreg"):
         except ValueError:
             counter += 1
             if counter > 500:
-                print("Impossible to find a good split!")
-                exit()
+                raise SystemExit("Impossible to find a good split!")
             continue
         else:
             # No error; stop the loop
@@ -100,7 +99,12 @@ def classify(data_file, elmo=None, algo="logreg"):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     arg = parser.add_argument
-    arg("--input", "-i", help="Path to tab-separated file with input data", required=True)
+    arg(
+        "--input",
+        "-i",
+        help="Path to tab-separated file with input data",
+        required=True,
+    )
     arg("--elmo", "-e", required=True, help="Path to ELMo model")
     arg("--batch", "-b", type=int, help="Max batch size", default=128)
 
