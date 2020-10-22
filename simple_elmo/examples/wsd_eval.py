@@ -178,8 +178,8 @@ def classify(data_file, elmo):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     arg = parser.add_argument
-    arg("--input", help="Path to tab-separated file with WSD data", required=True)
-    arg("--elmo", help="Path to ELMo model", required=True)
+    arg("--input", "-i", help="Path to tab-separated file with WSD data", required=True)
+    arg("--elmo", "-e", help="Path to ELMo model", required=True)
 
     args = parser.parse_args()
     data_path = args.input
