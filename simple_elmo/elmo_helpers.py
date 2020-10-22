@@ -2,7 +2,6 @@
 # coding: utf-8
 
 import sys
-import re
 import os
 import numpy as np
 import tensorflow as tf
@@ -207,17 +206,6 @@ def divide_chunks(data, n):
     for i in range(0, len(data), n):
         yield data[i:i + n]
 
-
-def tokenize(string, limit=None):
-    """
-    :param string: well, text string
-    :param limit: max tokens to output
-    :return: list of tokens
-    """
-    token_pattern = re.compile(r'(?u)\w+')
-    tokens = [t for t in token_pattern.findall(string)]
-    tokens = tokens[:limit]
-    return tokens
 
 
 

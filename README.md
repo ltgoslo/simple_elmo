@@ -67,16 +67,18 @@ Use these tensors for your downstream tasks.
 
 # Example scripts
 
-We provide two example scripts to make it easier to start using _simple_elmo_ right away:
-- [Inferring token embeddings](https://github.com/ltgoslo/simple_elmo/blob/master/simple_elmo/examples/get_elmo_vectors.py)
+We provide three example scripts to make it easier to start using _simple_elmo_ right away:
+## [Inferring token embeddings](https://github.com/ltgoslo/simple_elmo/blob/master/simple_elmo/examples/get_elmo_vectors.py)
  
 `python3 get_elmo_vectors.py -i test.txt -e ~/PATH_TO_ELMO/`
 
-- [Text pairs classification](https://github.com/ltgoslo/simple_elmo/blob/master/simple_elmo/examples/text_classification.py)
+This script simply returns contextualized ELMo embeddings for the words in your input sentences.
+
+## [Text pairs classification](https://github.com/ltgoslo/simple_elmo/blob/master/simple_elmo/examples/text_classification.py)
 
 `python3 text_classification.py -i paraphrases_lemm.tsv.gz -e ~/PATH_TO_ELMO/`
 
-The second script can be used to perform document pair classification (like in text entailment or paraphrase detection).
+This script can be used to perform document pair classification (like in text entailment or paraphrase detection).
 Simple average of ELMo embeddings for all words in a document is used;
 then, the cosine similarity between two documents is calculated and used as a classifier feature.
 Evaluated with macro F1 score and 10-fold cross-validation.
@@ -87,6 +89,22 @@ Example paraphrase dataset for English (adapted from [MRPC](https://www.microsof
 Example paraphrase datasets for Russian (adapted from http://paraphraser.ru/):
 - https://rusvectores.org/static/testsets/paraphrases.tsv.gz
 - https://rusvectores.org/static/testsets/paraphrases_lemm.tsv.gz (lemmatized)
+
+## [Word sense disambiguation](https://github.com/ltgoslo/simple_elmo/blob/master/simple_elmo/examples/wsd_eval.py)
+
+`python3 wsd_eval.py -i senseval3.tsv -e ~/PATH_TO_ELMO/`
+
+This script takes as an input a word sense disambiguation (WSD) dataset and a pre-trained ELMo model.
+It extracts token embeddings for ambiguous words and trains a simple Logistic Regression classifier  to predict word senses.
+Averaged macro F1 score across all words in the test set is used as the evaluation measure (with 5-fold cross-validation)*[]:
+
+Example WSD datasets for English (adapted from [Senseval 3](https://web.eecs.umich.edu/~mihalcea/senseval/senseval3/)):
+- https://rusvectores.org/static/testsets/senseval3.tsv
+- https://rusvectores.org/static/testsets/senseval3_lemm.tsv (lemmatized)
+
+Example WSD datasets for Russian (adapted from [RUSSE'18](https://toloka.yandex.ru/datasets/)):
+- https://rusvectores.org/static/testsets/russe_wsd.tsv
+- https://rusvectores.org/static/testsets/russe_wsd_lemm.tsv (lemmatized)
 
 # Frequently Asked Questions
 ### Where can I find pre-trained ELMo models?
