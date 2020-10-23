@@ -130,12 +130,7 @@ class ElmoModel:
             "input", sentence_embeddings_op, use_top_only=top
         )
 
-        return (
-            self.batcher,
-            self.sentence_character_ids,
-            self.elmo_sentence_input,
-            self.batch_size,
-        )
+        return "Model loaded."
 
     def get_elmo_vectors(self, texts, warmup=True):
         """
