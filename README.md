@@ -96,7 +96,7 @@ Example paraphrase datasets for Russian (adapted from http://paraphraser.ru/):
 
 This script takes as an input a word sense disambiguation (WSD) dataset and a pre-trained ELMo model.
 It extracts token embeddings for ambiguous words and trains a simple Logistic Regression classifier  to predict word senses.
-Averaged macro F1 score across all words in the test set is used as the evaluation measure (with 5-fold cross-validation)*[]:
+Averaged macro F1 score across all words in the test set is used as the evaluation measure (with 5-fold cross-validation).
 
 Example WSD datasets for English (adapted from [Senseval 3](https://web.eecs.umich.edu/~mihalcea/senseval/senseval3/)):
 - https://rusvectores.org/static/testsets/senseval3.tsv
