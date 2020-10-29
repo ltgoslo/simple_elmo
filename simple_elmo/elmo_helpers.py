@@ -130,7 +130,7 @@ class ElmoModel:
             "input", sentence_embeddings_op, use_top_only=top
         )
 
-        return "Model loaded."
+        return "The model is now loaded."
 
     def get_elmo_vectors(self, texts, warmup=True):
         """

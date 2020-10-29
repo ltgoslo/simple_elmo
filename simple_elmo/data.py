@@ -49,7 +49,7 @@ class Vocabulary(object):
             idx += 1
             if idx == limit:
                 break
-        logging.info(f"We will use the vocabulary of {len(self._id_to_word)} tokens.")
+        logging.info(f"We will cache the vocabulary of {len(self._id_to_word)} tokens.")
         # check to ensure file has special tokens
         if validate_file:
             if self._bos == -1 or self._eos == -1 or self._unk == -1:

@@ -529,8 +529,7 @@ class BidirectionalLanguageModelGraph(object):
                         cell_clip=cell_clip, proj_clip=proj_clip)
                 else:
                     lstm_cell = tf.compat.v1.nn.rnn_cell.LSTMCell(
-                        lstm_dim,
-                        cell_clip=cell_clip, proj_clip=proj_clip)
+                        lstm_dim, cell_clip=cell_clip, proj_clip=proj_clip)
 
                 if use_skip_connections:
                     # ResidualWrapper adds inputs to outputs
