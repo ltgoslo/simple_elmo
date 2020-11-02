@@ -101,7 +101,7 @@ class BidirectionalLanguageModel(object):
                     use_character_inputs=self._use_character_inputs,
                     max_batch_size=self._max_batch_size)
             else:
-                with tf.compat.v1.variable_scope('', reuse=True):
+                with tf.compat.v1.variable_scope('', reuse=tf.compat.v1.AUTO_REUSE):
                     lm_graph = BidirectionalLanguageModelGraph(
                         self.options,
                         self._weight_file,
@@ -400,6 +400,8 @@ class BidirectionalLanguageModelGraph(object):
         n_highway = cnn_options.get('n_highway')
         use_highway = n_highway is not None and n_highway > 0
         use_proj = n_filters != projection_dim
+
+        batch_size_n_tokens = None
 
         if use_highway or use_proj:
             #   reshape from (batch_size, n_tokens, dim) to (-1, dim)

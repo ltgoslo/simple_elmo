@@ -41,7 +41,9 @@ def classify(data_file, elmo=None, algo="logreg"):
     classes = Counter(y)
     print(f"Distribution of classes in the whole sample: {dict(classes)}")
 
+    # Simple dot product between two sentence vectors:
     x_train = [[np.dot(t0, t1)] for t0, t1 in zip(train0, train1)]
+
     print(f"Train shape: {len(x_train)}")
 
     if algo == "logreg":
@@ -88,6 +90,7 @@ def classify(data_file, elmo=None, algo="logreg"):
     print(f"Recall: {scores[1]:.3f}")
     print(f"F1: {scores[2]:.3f}")
 
+    print("=====")
     print("Random choice scores:")
     print("=====")
     print(f"Precision: {dummy_scores[0]:.3f}")
@@ -113,6 +116,6 @@ if __name__ == "__main__":
     max_batch_size = args.batch
 
     emb_model = ElmoModel()
-    emb_model.load(args.elmo, top=False, max_batch_size=max_batch_size)
+    emb_model.load(args.elmo, max_batch_size=max_batch_size)
 
     eval_scores = classify(data_path, elmo=emb_model)

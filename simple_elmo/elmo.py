@@ -1,8 +1,7 @@
 import tensorflow as tf
 
 
-def weight_layers(name, bilm_ops, l2_coef=0.0,
-                  use_top_only=False, do_layer_norm=False):
+def weight_layers(name, bilm_ops, l2_coef=0.0, use_layers="average", do_layer_norm=False):
     """
     Weight the layers of a biLM with trainable scalar weights to
     compute ELMo representations.
@@ -19,7 +18,8 @@ def weight_layers(name, bilm_ops, l2_coef=0.0,
             from BidirectionalLanguageModel(...)(ids_placeholder)
         l2_coef: the l2 regularization coefficient lambda.
             Pass None or 0.0 for no regularization.
-        use_top_only: if True, then only use the top layer.
+        use_layers: if "top", only use the top layer; if "average", yield the average of all layers;
+        if "all", yield all layers representations for each word.
         do_layer_norm: if True, then apply layer normalization to each biLM
             layer before normalizing
 
@@ -55,21 +55,27 @@ def weight_layers(name, bilm_ops, l2_coef=0.0,
             return tf.nn.batch_normalization(
                 x, mean, variance, None, None, 1E-12
             )
+        # no regularization
+        reg = 0.0
 
-        if use_top_only:
+        if use_layers == "all":
+            if do_layer_norm:
+                sum_pieces = _do_ln(lm_embeddings)
+            else:
+                sum_pieces = lm_embeddings
+        elif use_layers == "top":
             layers = tf.split(lm_embeddings, n_lm_layers, axis=1)
             # just the top layer
             sum_pieces = tf.squeeze(layers[-1], axis=1)
-            # no regularization
-            reg = 0.0
-        else:
-            elmo_weights = tf.compat.v1.get_variable(
-                '{}_ELMo_W'.format(name),
-                shape=(n_lm_layers,),
-                initializer=tf.zeros_initializer,
-                regularizer=_l2_regularizer,
-                trainable=True,
-            )
+        elif use_layers == "average":
+            with tf.compat.v1.variable_scope("bilm", reuse=tf.compat.v1.AUTO_REUSE):
+                elmo_weights = tf.compat.v1.get_variable(
+                    '{}_ELMo_W'.format(name),
+                    shape=(n_lm_layers,),
+                    initializer=tf.zeros_initializer,
+                    regularizer=_l2_regularizer,
+                    trainable=True,
+                )
 
             # normalize the weights
             normed_weights = tf.split(
@@ -97,13 +103,15 @@ def weight_layers(name, bilm_ops, l2_coef=0.0,
                 raise ValueError
 
         # scale the weighted sum by gamma
-        gamma = tf.compat.v1.get_variable(
-            '{}_ELMo_gamma'.format(name),
-            shape=(1,),
-            initializer=tf.ones_initializer,
-            regularizer=None,
-            trainable=True,
-        )
+        with tf.compat.v1.variable_scope("bilm", reuse=tf.compat.v1.AUTO_REUSE):
+            gamma = tf.compat.v1.get_variable(
+                '{}_ELMo_gamma'.format(name),
+                shape=(1,),
+                initializer=tf.ones_initializer,
+                regularizer=None,
+                trainable=True,
+            )
+
         weighted_lm_layers = sum_pieces * gamma
 
         ret = {'weighted_op': weighted_lm_layers, 'regularization_op': reg}

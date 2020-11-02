@@ -95,8 +95,8 @@ def classify(data_file, elmo):
         print(f"{len(sentences)} sentences total for {word}")
         print("=====")
 
-        # Actually producing ELMo embeddings for our data:
-        elmo_vectors = elmo.get_elmo_vectors(sentences)
+        # Actually producing ELMo embeddings for our data from the top layer:
+        elmo_vectors = elmo.get_elmo_vectors(sentences, layers="top")
 
         for sentence, nr in zip(range(len(sentences)), nums):
             query_vec = elmo_vectors[sentence, nr, :]
@@ -185,6 +185,6 @@ if __name__ == "__main__":
     data_path = args.input
 
     model = ElmoModel()
-    model.load(args.elmo, top=True)
+    model.load(args.elmo)
 
     eval_scores = classify(data_path, model)

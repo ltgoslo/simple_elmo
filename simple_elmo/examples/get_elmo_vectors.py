@@ -5,6 +5,7 @@ import argparse
 from simple_elmo import ElmoModel
 import numpy as np
 from smart_open import open
+import time
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -18,7 +19,7 @@ if __name__ == "__main__":
     data_path = args.input
 
     # Process only the first k sentences
-    max_sentences = 1000
+    max_sentences = 100
 
     raw_sentences = []
 
@@ -36,13 +37,16 @@ if __name__ == "__main__":
 
     model = ElmoModel()
 
-    model.load(args.elmo, top=False)
+    model.load(args.elmo)
 
     # Actually producing ELMo embeddings for our data:
+    start = time.time()
+    elmo_vectors = model.get_elmo_vectors(sentences, layers="average")
+    end = time.time()
 
-    elmo_vectors = model.get_elmo_vectors(sentences)
+    processing_time = int(end - start)
 
-    print("ELMo embeddings for your input are ready")
+    print(f"ELMo embeddings for your input are ready in {processing_time} seconds")
     print(f"Tensor shape: {elmo_vectors.shape}")
 
     # Due to batch processing, the above code produces for each sentence
@@ -66,8 +70,7 @@ if __name__ == "__main__":
 
     print(f"Most similar words (dot product values in parentheses)")
 
-    for sent_nr, sent in enumerate(
-        sentences[:10]):  # we are checking the first 10 sentences
+    for sent_nr, sent in enumerate(sentences[:10]):  # we are checking the first 10 sentences
         print("======")
         print(sent)
         sims = {}

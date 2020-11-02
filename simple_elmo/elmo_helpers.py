@@ -22,9 +22,11 @@ class ElmoModel:
         self.batcher = None
         self.sentence_character_ids = None
         self.elmo_sentence_input = None
+        self.sentence_embeddings_op = None
         self.batch_size = None
         self.max_chars = None
         self.vector_size = None
+        self.n_layers = None
 
         # We do not use eager execution from TF 2.0
         tf.compat.v1.disable_eager_execution()
@@ -34,13 +36,12 @@ class ElmoModel:
         )
         self.logger = logging.getLogger(__name__)
 
-    def load(self, directory, top=False, max_batch_size=32, limit=100):
+    def load(self, directory, max_batch_size=32, limit=100):
         # Loading a pre-trained ELMo model:
         # You can call load with top=True to use only the top ELMo layer
         """
         :param directory: directory or a ZIP archive with an ELMo model
         ('*.hdf5' and 'options.json' files must be present)
-        :param top: use only top ELMo layer
         :param max_batch_size: the maximum allowable batch size during inference
         :param limit: cache only the first <limit> words from the vocabulary file
         :return: ELMo batcher, character id placeholders, op object
@@ -120,31 +121,37 @@ class ElmoModel:
         bilm = BidirectionalLanguageModel(
             options_file, weight_file, max_batch_size=max_batch_size
         )
+
         self.vector_size = int(bilm.options["lstm"]["projection_dim"] * 2)
+        self.n_layers = bilm.options["lstm"]["n_layers"] + 1
 
         # Get ops to compute the LM embeddings.
-        sentence_embeddings_op = bilm(self.sentence_character_ids)
-
-        # Get an op to compute ELMo (weighted average of the internal biLM layers)
-        self.elmo_sentence_input = weight_layers(
-            "input", sentence_embeddings_op, use_top_only=top
-        )
+        self.sentence_embeddings_op = bilm(self.sentence_character_ids)
 
         return "The model is now loaded."
 
-    def get_elmo_vectors(self, texts, warmup=True):
+    def get_elmo_vectors(self, texts, warmup=True, layers="average"):
         """
         :param texts: list of sentences (lists of words)
         :param warmup: warm up the model before actual inference (by running it over the 1st batch)
-        :return: embedding matrix for all sentences (max word count by vector size)
+        :param layers: ["top", "average", "all"].
+        Yield the top ELMo layer, the average of all layers, or all layers as they are.
+        :return: embedding tensor for all sentences
+        (number of used layers by max word count by vector size)
         """
-
         max_text_length = max([len(t) for t in texts])
 
         # Creating the matrix which will eventually contain all embeddings from all batches:
-        final_vectors = np.zeros((len(texts), max_text_length, self.vector_size))
+        if layers == "all":
+            final_vectors = np.zeros((len(texts), self.n_layers, max_text_length, self.vector_size))
+        else:
+            final_vectors = np.zeros((len(texts), max_text_length, self.vector_size))
 
         with tf.compat.v1.Session() as sess:
+            # Get an op to compute ELMo vectors (a function of the internal biLM layers)
+            self.elmo_sentence_input = weight_layers("input", self.sentence_embeddings_op,
+                                                     use_layers=layers)
+
             # It is necessary to initialize variables once before running inference.
             sess.run(tf.compat.v1.global_variables_initializer())
 
@@ -166,24 +173,35 @@ class ElmoModel:
                 # Updating the full matrix:
                 first_row = self.batch_size * chunk_counter
                 last_row = first_row + elmo_vectors.shape[0]
-                final_vectors[
-                first_row:last_row, : elmo_vectors.shape[1], :
-                ] = elmo_vectors
+                if layers == "all":
+                    final_vectors[first_row:last_row, :, : elmo_vectors.shape[2], :] = elmo_vectors
+                else:
+                    final_vectors[first_row:last_row, : elmo_vectors.shape[1], :] = elmo_vectors
                 chunk_counter += 1
 
             return final_vectors
 
-    def get_elmo_vector_average(self, texts, warmup=True):
+    def get_elmo_vector_average(self, texts, warmup=True, layers="average"):
         """
         :param texts: list of sentences (lists of words)
         :param warmup: warm up the model before actual inference (by running it over the 1st batch)
+        :param layers: ["top", "average", "all"].
+        Yield the top ELMo layer, the average of all layers, or all layers as they are.
         :return: matrix of averaged embeddings for all sentences
         """
-        average_vectors = np.zeros((len(texts), self.vector_size))
+
+        if layers == "all":
+            average_vectors = np.zeros((len(texts), self.n_layers, self.vector_size))
+        else:
+            average_vectors = np.zeros((len(texts), self.vector_size))
 
         counter = 0
 
         with tf.compat.v1.Session() as sess:
+            # Get an op to compute ELMo vectors (a function of the internal biLM layers)
+            self.elmo_sentence_input = weight_layers("input", self.sentence_embeddings_op,
+                                                     use_layers=layers)
+
             # It is necessary to initialize variables once before running inference.
             sess.run(tf.compat.v1.global_variables_initializer())
 
@@ -194,7 +212,7 @@ class ElmoModel:
             for chunk in divide_chunks(texts, self.batch_size):
                 # Converting sentences to character ids:
                 sentence_ids = self.batcher.batch_sentences(chunk)
-                self.logger.info(f"Sentences in this batch: {len(chunk)}")
+                self.logger.info(f"Texts in the current batch: {len(chunk)}")
 
                 # Compute ELMo representations.
                 elmo_vectors = sess.run(
@@ -204,10 +222,17 @@ class ElmoModel:
 
                 self.logger.debug(f"ELMo sentence input shape: {elmo_vectors.shape}")
 
+                if layers == "all":
+                    elmo_vectors = elmo_vectors.reshape((len(chunk), elmo_vectors.shape[2],
+                                                         self.n_layers, self.vector_size))
                 for sentence in range(len(chunk)):
-                    sent_vec = np.zeros((elmo_vectors.shape[1], elmo_vectors.shape[2]))
-                    for word_vec in enumerate(elmo_vectors[sentence, :, :]):
-                        sent_vec[word_vec[0], :] = word_vec[1]
+                    if layers == "all":
+                        sent_vec = np.zeros((elmo_vectors.shape[1], self.n_layers,
+                                             self.vector_size))
+                    else:
+                        sent_vec = np.zeros((elmo_vectors.shape[1], self.vector_size))
+                    for nr, word_vec in enumerate(elmo_vectors[sentence]):
+                        sent_vec[nr] = word_vec
                     semantic_fingerprint = np.sum(sent_vec, axis=0)
                     semantic_fingerprint = np.divide(
                         semantic_fingerprint, sent_vec.shape[0]
@@ -215,7 +240,8 @@ class ElmoModel:
                     query_vec = semantic_fingerprint / np.linalg.norm(
                         semantic_fingerprint
                     )
-                    average_vectors[counter] = query_vec.reshape(-1)
+
+                    average_vectors[counter] = query_vec
                     counter += 1
 
         return average_vectors
