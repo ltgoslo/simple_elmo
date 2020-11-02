@@ -30,15 +30,12 @@ OR a directory containing 2 files:
 if it is not found, the first existing file with the `.hdf5` extension will be used);
 - `options.json`, description of the model architecture in JSON;
 
-Optionally, one can also provide `vocab.txt`/`vocab.txt.gz`: 
+One can also provide a `vocab.txt`/`vocab.txt.gz` file in the same directory: 
 a one-word-per-line vocabulary of words to be cached (as character id representations) before inference.
 Even if it is not present at all, ELMo will still process all words normally.
 However, providing the vocabulary file can slightly increase inference speed when working with very large corpora (by reducing the amount of word to char ids conversions).
 
 ### Optional arguments
-- **top**: *bool, default False*
-if this parameter is set to True, only the top (last) layer of the model will be used;
-otherwise, the average of all 3 layers is produced.
 - **max_batch_size**: *integer, default 32*
       the maximum number of sentences/documents in a batch during inference;
       your input will be automatically split into chunks of the respective size;
@@ -63,6 +60,12 @@ The `get_elmo_vector_average()` method produces a tensor with one vector per eac
 constructed by averaging individual contextualized word embeddings. 
 Its shape is (number of sentences, ELMo dimensionality).
 
+Both methods can be used with the **layers** argument, which takes one of the three values: 
+- *average* (default): return the average of all ELMo layers for each word;
+- *top*: return only the top (last) layer for each word;
+- *all*: return all ELMo layers for each word 
+(an additional dimension appears in the produced tensor, with the shape equal to the number of layers in the model, 3 as a rule)
+
 Use these tensors for your downstream tasks.
 
 # Example scripts
@@ -80,7 +83,7 @@ This script simply returns contextualized ELMo embeddings for the words in your 
 
 This script can be used to perform document pair classification (like in text entailment or paraphrase detection).
 Simple average of ELMo embeddings for all words in a document is used;
-then, the cosine similarity between two documents is calculated and used as a classifier feature.
+then, the cosine similarity between two documents is calculated and used as a single classifier feature.
 Evaluated with macro F1 score and 10-fold cross-validation.
 
 Example paraphrase dataset for English (adapted from [MRPC](https://www.microsoft.com/en-us/download/details.aspx?id=52398)):
