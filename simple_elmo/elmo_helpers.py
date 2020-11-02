@@ -30,6 +30,9 @@ class ElmoModel:
 
         # We do not use eager execution from TF 2.0
         tf.compat.v1.disable_eager_execution()
+        
+        # Do not emit deprecation warnings:
+        tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
         logging.basicConfig(
             format="%(asctime)s : %(levelname)s : %(message)s", level=logging.INFO
