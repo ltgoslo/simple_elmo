@@ -4,6 +4,7 @@
 import sys
 import os
 import numpy as np
+from scipy.special import softmax
 import tensorflow as tf
 import json
 import zipfile
@@ -11,6 +12,13 @@ import logging
 from simple_elmo.data import Batcher
 from simple_elmo.model import BidirectionalLanguageModel
 from simple_elmo.elmo import weight_layers
+from simple_elmo.training import (
+    load_options_latest_checkpoint,
+    load_vocab,
+    LanguageModel,
+    pack_encoded,
+    _get_feed_dict_from_x,
+)
 
 
 class ElmoModel:
@@ -27,10 +35,16 @@ class ElmoModel:
         self.max_chars = None
         self.vector_size = None
         self.n_layers = None
+        self.vocab = None
+        self.session = None
+        self.model = None
+        self.init_state_tensors = None
+        self.final_state_tensors = None
+        self.init_state_values = None
 
         # We do not use eager execution from TF 2.0
         tf.compat.v1.disable_eager_execution()
-        
+
         # Do not emit deprecation warnings:
         tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.ERROR)
 
@@ -39,7 +53,7 @@ class ElmoModel:
         )
         self.logger = logging.getLogger(__name__)
 
-    def load(self, directory, max_batch_size=32, limit=100):
+    def load(self, directory, max_batch_size=32, limit=100, full=False):
         # Loading a pre-trained ELMo model:
         # You can call load with top=True to use only the top ELMo layer
         """
@@ -47,6 +61,7 @@ class ElmoModel:
         ('*.hdf5' and 'options.json' files must be present)
         :param max_batch_size: the maximum allowable batch size during inference
         :param limit: cache only the first <limit> words from the vocabulary file
+        :param full: set to True if loading from full checkpoints (for example, for LM)
         :return: ELMo batcher, character id placeholders, op object
         """
         if not os.path.exists(directory):
@@ -74,6 +89,10 @@ class ElmoModel:
             options_file.seek(0)
         elif os.path.isdir(directory):
             # We have all the files already extracted in a separate directory
+            options_file = os.path.join(directory, "options.json")
+            with open(options_file, "r") as of:
+                m_options = json.load(of)
+
             if os.path.isfile(os.path.join(directory, "vocab.txt.gz")):
                 vocab_file = os.path.join(directory, "vocab.txt.gz")
             elif os.path.isfile(os.path.join(directory, "vocab.txt")):
@@ -81,23 +100,26 @@ class ElmoModel:
             else:
                 self.logger.info("No vocabulary file found in the model.")
                 vocab_file = None
-            if os.path.exists(os.path.join(directory, "model.hdf5")):
-                weight_file = os.path.join(directory, "model.hdf5")
+            if full:
+                _, weight_file = load_options_latest_checkpoint(directory)
+                self.logger.info(f"Loading from {weight_file}...")
+
             else:
-                weight_files = [
-                    fl for fl in os.listdir(directory) if fl.endswith(".hdf5")
-                ]
-                if not weight_files:
-                    raise SystemExit(
-                        f"Error: no HDF5 model files found in the {directory} directory!"
+                if os.path.exists(os.path.join(directory, "model.hdf5")):
+                    weight_file = os.path.join(directory, "model.hdf5")
+                else:
+                    weight_files = [
+                        fl for fl in os.listdir(directory) if fl.endswith(".hdf5")
+                    ]
+                    if not weight_files:
+                        raise SystemExit(
+                            f"Error: no HDF5 model files found in the {directory} directory!"
+                        )
+                    weight_file = os.path.join(directory, weight_files[0])
+                    self.logger.info(
+                        f"No model.hdf5 file found. Using {weight_file} as a model file."
                     )
-                weight_file = os.path.join(directory, weight_files[0])
-                self.logger.info(
-                    f"No model.hdf5 file found. Using {weight_file} as a model file."
-                )
-            options_file = os.path.join(directory, "options.json")
-            with open(options_file, "r") as of:
-                m_options = json.load(of)
+
         else:
             raise SystemExit(
                 "Error: either provide a path to a directory with the model "
@@ -106,30 +128,73 @@ class ElmoModel:
 
         max_chars = m_options["char_cnn"]["max_characters_per_token"]
         self.max_chars = max_chars
-        if m_options["char_cnn"]["n_characters"] == 261:
-            raise SystemExit(
-                "Error: invalid number of characters in the options.json file: 261. "
-                "Set n_characters to 262 for inference."
+        if full:
+            if m_options["char_cnn"]["n_characters"] == 262:
+                self.logger.info("Invalid number of characters in the options.json file: 262.")
+                self.logger.info("Setting it to 261 for using the model as LM")
+                m_options["char_cnn"]["n_characters"] = 261
+            self.vocab = load_vocab(vocab_file, self.max_chars)
+            unroll_steps = 1
+            lm_batch_size = 1
+
+            config = tf.compat.v1.ConfigProto(allow_soft_placement=True)
+            self.session = tf.compat.v1.Session(config=config)
+
+            with tf.device("/cpu:0"), tf.compat.v1.variable_scope("lm"):
+                test_options = dict(m_options)
+                test_options["batch_size"] = lm_batch_size
+                test_options["unroll_steps"] = 1
+                self.model = LanguageModel(test_options, False)
+                # we use the "Saver" class to load the variables
+                loader = tf.compat.v1.train.Saver()
+                loader.restore(self.session, weight_file)
+
+            self.init_state_tensors = self.model.init_lstm_state
+            self.final_state_tensors = self.model.final_lstm_state
+
+            feed_dict = {
+                self.model.tokens_characters: np.zeros(
+                    [lm_batch_size, unroll_steps, max_chars], dtype=np.int32
+                )
+            }
+            # Bidirectionality:
+            feed_dict.update(
+                {
+                    self.model.tokens_characters_reverse: np.zeros(
+                        [lm_batch_size, unroll_steps, max_chars], dtype=np.int32
+                    )
+                }
             )
 
-        # Create a Batcher to map text to character ids.
-        self.batcher = Batcher(vocab_file, max_chars, limit=limit)
+            self.init_state_values = self.session.run(
+                self.init_state_tensors, feed_dict=feed_dict
+            )
 
-        # Input placeholders to the biLM.
-        self.sentence_character_ids = tf.compat.v1.placeholder(
-            "int32", shape=(None, None, max_chars)
-        )
+        else:
+            if m_options["char_cnn"]["n_characters"] == 261:
+                raise SystemExit(
+                    "Error: invalid number of characters in the options.json file: 261. "
+                    "Set n_characters to 262 for inference."
+                )
 
-        # Build the biLM graph.
-        bilm = BidirectionalLanguageModel(
-            options_file, weight_file, max_batch_size=max_batch_size
-        )
+            # Create a Batcher to map text to character ids.
+            self.batcher = Batcher(vocab_file, max_chars, limit=limit)
 
-        self.vector_size = int(bilm.options["lstm"]["projection_dim"] * 2)
-        self.n_layers = bilm.options["lstm"]["n_layers"] + 1
+            # Input placeholders to the biLM.
+            self.sentence_character_ids = tf.compat.v1.placeholder(
+                "int32", shape=(None, None, max_chars)
+            )
 
-        # Get ops to compute the LM embeddings.
-        self.sentence_embeddings_op = bilm(self.sentence_character_ids)
+            # Build the biLM graph.
+            bilm = BidirectionalLanguageModel(
+                options_file, weight_file, max_batch_size=max_batch_size
+            )
+
+            # Get ops to compute the LM embeddings.
+            self.sentence_embeddings_op = bilm(self.sentence_character_ids)
+
+        self.vector_size = int(m_options["lstm"]["projection_dim"] * 2)
+        self.n_layers = m_options["lstm"]["n_layers"] + 1
 
         return "The model is now loaded."
 
@@ -146,14 +211,17 @@ class ElmoModel:
 
         # Creating the matrix which will eventually contain all embeddings from all batches:
         if layers == "all":
-            final_vectors = np.zeros((len(texts), self.n_layers, max_text_length, self.vector_size))
+            final_vectors = np.zeros(
+                (len(texts), self.n_layers, max_text_length, self.vector_size)
+            )
         else:
             final_vectors = np.zeros((len(texts), max_text_length, self.vector_size))
 
         with tf.compat.v1.Session() as sess:
             # Get an op to compute ELMo vectors (a function of the internal biLM layers)
-            self.elmo_sentence_input = weight_layers("input", self.sentence_embeddings_op,
-                                                     use_layers=layers)
+            self.elmo_sentence_input = weight_layers(
+                "input", self.sentence_embeddings_op, use_layers=layers
+            )
 
             # It is necessary to initialize variables once before running inference.
             sess.run(tf.compat.v1.global_variables_initializer())
@@ -202,8 +270,9 @@ class ElmoModel:
 
         with tf.compat.v1.Session() as sess:
             # Get an op to compute ELMo vectors (a function of the internal biLM layers)
-            self.elmo_sentence_input = weight_layers("input", self.sentence_embeddings_op,
-                                                     use_layers=layers)
+            self.elmo_sentence_input = weight_layers(
+                "input", self.sentence_embeddings_op, use_layers=layers
+            )
 
             # It is necessary to initialize variables once before running inference.
             sess.run(tf.compat.v1.global_variables_initializer())
@@ -226,12 +295,19 @@ class ElmoModel:
                 self.logger.debug(f"ELMo sentence input shape: {elmo_vectors.shape}")
 
                 if layers == "all":
-                    elmo_vectors = elmo_vectors.reshape((len(chunk), elmo_vectors.shape[2],
-                                                         self.n_layers, self.vector_size))
+                    elmo_vectors = elmo_vectors.reshape(
+                        (
+                            len(chunk),
+                            elmo_vectors.shape[2],
+                            self.n_layers,
+                            self.vector_size,
+                        )
+                    )
                 for sentence in range(len(chunk)):
                     if layers == "all":
-                        sent_vec = np.zeros((elmo_vectors.shape[1], self.n_layers,
-                                             self.vector_size))
+                        sent_vec = np.zeros(
+                            (elmo_vectors.shape[1], self.n_layers, self.vector_size)
+                        )
                     else:
                         sent_vec = np.zeros((elmo_vectors.shape[1], self.vector_size))
                     for nr, word_vec in enumerate(elmo_vectors[sentence]):
@@ -248,6 +324,115 @@ class ElmoModel:
                     counter += 1
 
         return average_vectors
+
+    def get_elmo_substitutes(self, data, topn=3, nodelimiters=True):
+        """
+        :param data: list of sentences
+        :param topn: how many top probable substitutes to return
+        :param nodelimiters: whether to filter out sentence delimiters (<s> and </S>)
+        :return: a list of forward and backward LM predictions for each word in each input sentence
+        """
+
+        word_predictions = []
+        forward_substitutes = []
+        backward_substitutes = []
+
+        self.logger.info("Calculating language model predictions...")
+
+        for batch_no, batch in enumerate(pack_encoded(data, self.vocab)):
+            # token_ids = (1, num_steps)
+            # char_inputs = (1, num_steps, 50) of character ids
+            # targets = word ID of next word (1, num_steps)
+
+            x = batch
+
+            feed_dict = {
+                t: v for t, v in zip(self.init_state_tensors, self.init_state_values)
+            }
+
+            feed_dict.update(
+                _get_feed_dict_from_x(
+                    x, 0, x["token_ids"].shape[0], self.model, True, True
+                )
+            )
+            ret = self.session.run(
+                [
+                    self.model.total_loss,
+                    self.final_state_tensors,
+                    self.model.output_scores,
+                ],
+                feed_dict=feed_dict,
+            )
+
+            loss, init_state_values, predictions = ret
+            forward_preds, backward_preds = [val.flatten() for val in predictions]
+            if nodelimiters:
+                for val in [0, 1]:
+                    forward_preds[val] = 0
+                    backward_preds[val] = 0
+            forward_preds = softmax(forward_preds)
+            backward_preds = softmax(backward_preds)
+            forward_ind = np.flip(forward_preds.argsort()[-topn:])
+            backward_ind = np.flip(backward_preds.argsort()[-topn:])
+
+            # End of sentence:
+            if (
+                    batch["next_token_id"][0][0] == 1
+                    and batch["next_token_id_reverse"][0][0] == 0
+            ):
+                sentence_substitutes = []
+                backward_substitutes.reverse()
+                for f_position, b_position in zip(
+                        forward_substitutes, backward_substitutes
+                ):
+                    cur_substitute = {
+                        "word": f_position["word"],
+                        "forward": {
+                            el: f_position[el] for el in f_position if el != "word"
+                        },
+                        "backward": {
+                            el: b_position[el] for el in b_position if el != "word"
+                        },
+                    }
+                    sentence_substitutes.append(cur_substitute)
+                word_predictions.append(sentence_substitutes)
+                self.logger.debug(f"{forward_substitutes}")
+                self.logger.debug(f"{backward_substitutes}")
+                forward_substitutes = []
+                backward_substitutes = []
+                continue
+
+            # Next forward token:
+            next_word = self.vocab.id_to_word(batch["next_token_id"][0][0])
+            # Top forward predictions:
+            forward_words = [self.vocab.id_to_word(word) for word in forward_ind]
+            # Top forward prediction probabilities:
+            forward_probs = np.around(forward_preds[forward_ind], 4)
+            forward_substitutes.append(
+                {
+                    "word": next_word,
+                    "candidates": forward_ind,
+                    "candidate_words": forward_words,
+                    "logp": forward_probs,
+                }
+            )
+
+            # Next backward token:
+            next_back_word = self.vocab.id_to_word(batch["next_token_id_reverse"][0][0])
+            # Top backward predictions:
+            backward_words = [self.vocab.id_to_word(word) for word in backward_ind]
+            # Top backward prediction probabilities:
+            backward_probs = np.around(backward_preds[backward_ind], 4)
+            backward_substitutes.append(
+                {
+                    "word": next_back_word,
+                    "candidates": backward_ind,
+                    "candidate_words": backward_words,
+                    "logp": backward_probs,
+                }
+            )
+
+        return word_predictions
 
     def warmup(self, sess, texts):
         for chunk0 in divide_chunks(texts, self.batch_size):

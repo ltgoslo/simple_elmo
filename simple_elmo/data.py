@@ -345,7 +345,7 @@ class LMDataset(object):
         shuffle_on_load = if True, then shuffle the sentences after loading.
         """
         self._vocab = vocab
-        self._all_shards = glob.glob(filepattern + '*.gz')
+        self._all_shards = glob.glob(filepattern + '*')
         logging.info(f'Found {len(self._all_shards)} shards at {filepattern}')
         self._shards_to_choose = []
 

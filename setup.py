@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="simple_elmo",
-    version="0.6.0",
+    version="0.7.0",
     author="Andrey Kutuzov",
     author_email="andreku@ifi.uio.no",
     description="Handy library to work with pre-trained ELMo embeddings in TensorFlow",
@@ -14,7 +14,7 @@ setuptools.setup(
     url="https://github.com/ltgoslo/simple_elmo",
     packages=setuptools.find_packages(),
     python_requires='>=3.6',
-    install_requires=["h5py", "numpy", "smart_open>1.8.1", "pandas"],
+    install_requires=["h5py", "numpy", "smart_open>1.8.1", "pandas", "scipy"],
     extras_require={
         "tf": ["tensorflow>=1.14.0"],
         "tf_gpu": ["tensorflow-gpu>=1.14.0"],

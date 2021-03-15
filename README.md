@@ -36,22 +36,28 @@ Even if it is not present at all, ELMo will still process all words normally.
 However, providing the vocabulary file can slightly increase inference speed when working with very large corpora (by reducing the amount of word to char ids conversions).
 
 ### Optional arguments
-- **max_batch_size**: *integer, default 32*
+- **max_batch_size**: *integer, default 32*;
       the maximum number of sentences/documents in a batch during inference;
       your input will be automatically split into chunks of the respective size;
       if your computational resources allow, you might want to increase this value.
-- **limit**: *integer, default 100*
+- **limit**: *integer, default 100*;
 the number of words from the vocabulary file to actually cache (counted from the first line). 
-Increase the default value if you are sure these words occur in your training data much more often than 1 or 2 times. 
+Increase the default value if you are sure these words occur in your training data much more often than 1 or 2 times.
+- **full**: *boolean, default False*;
+if True, will try to load the full model from TensorFlow checkpoints, together with the vocabulary.
+Models loaded this way can be used, for language modeling.
 
 ## Working with models
- Currently, we provide two methods for loaded models (will be expanded in the future):
+ Currently, we provide three methods for loaded models (will be expanded in the future):
 
  - `model.get_elmo_vectors(SENTENCES)`
  
  - `model.get_elmo_vector_average(SENTENCES)`
 
+ - `model.get__elmo_substitutes(RAW_SENTENCES)`
+
 `SENTENCES` is a list of input sentences (lists of words).
+`RAW_SENTENCES` is a list of input sentences as strings.
 
 The `get_elmo_vectors()` method produces a tensor of contextualized word embeddings.
 Its shape is (number of sentences, the length of the longest sentence, ELMo dimensionality).
@@ -60,13 +66,18 @@ The `get_elmo_vector_average()` method produces a tensor with one vector per eac
 constructed by averaging individual contextualized word embeddings. 
 Its shape is (number of sentences, ELMo dimensionality).
 
-Both methods can be used with the **layers** argument, which takes one of the three values: 
+Both these methods can be used with the **layers** argument, which takes one of the three values:
 - *average* (default): return the average of all ELMo layers for each word;
 - *top*: return only the top (last) layer for each word;
 - *all*: return all ELMo layers for each word 
 (an additional dimension appears in the produced tensor, with the shape equal to the number of layers in the model, 3 as a rule)
 
 Use these tensors for your downstream tasks.
+
+The `get__elmo_substitutes()` method currently works only with the models loaded  with `full=True`.
+For each input sentences, it  outputs a list of lexical substitutes (LM predictions) for each word token in the sentence, produced by the forward and backward ELMo language models.
+The substitutes are yielded as dictionaries containing the vocabulary identifiers of the most probable LM predictions, their lexical forms and their probabilities.
+NB: this method is still experimental!
 
 # Example scripts
 

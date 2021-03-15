@@ -1,3 +1,4 @@
+scipy
 tensorflow > 1.14
 pandas
 scikit-learn
