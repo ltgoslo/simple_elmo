@@ -411,9 +411,9 @@ class ElmoModel:
             forward_substitutes.append(
                 {
                     "word": next_word,
-                    "candidates": forward_ind,
+                    "candidates": forward_ind.tolist(),
                     "candidate_words": forward_words,
-                    "logp": forward_probs,
+                    "logp": forward_probs.tolist(),
                 }
             )
 
@@ -426,9 +426,9 @@ class ElmoModel:
             backward_substitutes.append(
                 {
                     "word": next_back_word,
-                    "candidates": backward_ind,
+                    "candidates": backward_ind.tolist(),
                     "candidate_words": backward_words,
-                    "logp": backward_probs,
+                    "logp": backward_probs.tolist(),
                 }
             )
 
