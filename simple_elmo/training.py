@@ -566,6 +566,7 @@ class LanguageModel(object):
                         logits=output_scores,
                         labels=tf.squeeze(next_token_id_flat, axis=[1]),
                     )
+
             self.individual_losses.append(tf.reduce_mean(input_tensor=losses))
 
         # now make the total loss -- it's the mean of the individual losses
@@ -1139,13 +1140,13 @@ def lm_encode(sentences_raw, vocab, reverse=False):
         yield encoded
 
 
-def pack_encoded(sentences, vocab):
+def pack_encoded(sentences, vocab, batch_size):
     for X, Xr in zip(
         _get_batch(
-            lm_encode(sentences, vocab, reverse=False), 1, 1, vocab.max_word_length
+            lm_encode(sentences, vocab, reverse=False), batch_size, 1, vocab.max_word_length
         ),
         _get_batch(
-            lm_encode(sentences, vocab, reverse=True), 1, 1, vocab.max_word_length
+            lm_encode(sentences, vocab, reverse=True), batch_size, 1, vocab.max_word_length
         ),
     ):
 

@@ -1,17 +1,16 @@
 # /bin/env python3
 # coding: utf-8
 
-import sys
-import os
-import numpy as np
-from scipy.special import softmax
-import tensorflow as tf
 import json
-import zipfile
 import logging
+import os
+import sys
+import zipfile
+import numpy as np
+import tensorflow as tf
 from simple_elmo.data import Batcher
-from simple_elmo.model import BidirectionalLanguageModel
 from simple_elmo.elmo import weight_layers
+from simple_elmo.model import BidirectionalLanguageModel
 from simple_elmo.training import (
     load_options_latest_checkpoint,
     load_vocab,
@@ -135,7 +134,7 @@ class ElmoModel:
                 m_options["char_cnn"]["n_characters"] = 261
             self.vocab = load_vocab(vocab_file, self.max_chars)
             unroll_steps = 1
-            lm_batch_size = 1
+            lm_batch_size = self.batch_size
 
             config = tf.compat.v1.ConfigProto(allow_soft_placement=True)
             self.session = tf.compat.v1.Session(config=config)
@@ -333,18 +332,18 @@ class ElmoModel:
         :return: a list of forward and backward LM predictions for each word in each input sentence
         """
 
+        batch_size = self.batch_size
+        if len(data) < batch_size:
+            raise SystemError("Batch size must be less than the number of input sentences!")
         word_predictions = []
-        forward_substitutes = []
-        backward_substitutes = []
+        storage = [([], [])] * batch_size
 
         self.logger.info("Calculating language model predictions...")
 
-        for batch_no, batch in enumerate(pack_encoded(data, self.vocab)):
-            # token_ids = (1, num_steps)
-            # char_inputs = (1, num_steps, 50) of character ids
-            # targets = word ID of next word (1, num_steps)
-
-            x = batch
+        for batch_no, batch in enumerate(pack_encoded(data, self.vocab, batch_size)):
+            # token_ids = (batch_size, num_steps)
+            # char_inputs = (batch_size, num_steps, 50) of character ids
+            # targets = word ID of next word (batch_size, num_steps)
 
             feed_dict = {
                 t: v for t, v in zip(self.init_state_tensors, self.init_state_values)
@@ -352,34 +351,32 @@ class ElmoModel:
 
             feed_dict.update(
                 _get_feed_dict_from_x(
-                    x, 0, x["token_ids"].shape[0], self.model, True, True
+                    batch, 0, batch["token_ids"].shape[0], self.model, True, True
                 )
             )
             ret = self.session.run(
                 [
-                    self.model.total_loss,
                     self.final_state_tensors,
                     self.model.output_scores,
                 ],
                 feed_dict=feed_dict,
             )
 
-            loss, init_state_values, predictions = ret
-            forward_preds, backward_preds = [val.flatten() for val in predictions]
+            init_state_values, predictions = ret
+            forward_preds, backward_preds = predictions
+
             if nodelimiters:
                 for val in [0, 1]:
-                    forward_preds[val] = 0
-                    backward_preds[val] = 0
-            forward_preds = softmax(forward_preds)
-            backward_preds = softmax(backward_preds)
-            forward_ind = np.flip(forward_preds.argsort()[-topn:])
-            backward_ind = np.flip(backward_preds.argsort()[-topn:])
+                    for f_el, b_el in zip(forward_preds, backward_preds):
+                        f_el[val] = 0
+                        b_el[val] = 0
+
+            forward_ind = np.array([np.flip(el.argsort()[-topn:]) for el in forward_preds])
+            backward_ind = np.array([np.flip(el.argsort()[-topn:]) for el in backward_preds])
 
             # End of sentence:
-            if (
-                    batch["next_token_id"][0][0] == 1
-                    and batch["next_token_id_reverse"][0][0] == 0
-            ):
+            def merge_substitutes(sentence):
+                forward_substitutes, backward_substitutes = sentence
                 sentence_substitutes = []
                 backward_substitutes.reverse()
                 for f_position, b_position in zip(
@@ -395,43 +392,50 @@ class ElmoModel:
                         },
                     }
                     sentence_substitutes.append(cur_substitute)
-                word_predictions.append(sentence_substitutes)
-                self.logger.debug(f"{forward_substitutes}")
-                self.logger.debug(f"{backward_substitutes}")
-                forward_substitutes = []
-                backward_substitutes = []
-                continue
+                self.logger.debug(" ".join([d["word"] for d in sentence_substitutes]))
+                return sentence_substitutes
 
-            # Next forward token:
-            next_word = self.vocab.id_to_word(batch["next_token_id"][0][0])
+            # Next forward tokens:
+            next_words = [self.vocab.id_to_word(t[0]) for t in batch["next_token_id"]]
             # Top forward predictions:
-            forward_words = [self.vocab.id_to_word(word) for word in forward_ind]
+            forward_words = [[self.vocab.id_to_word(word) for word in row] for row in forward_ind]
             # Top forward prediction probabilities:
-            forward_probs = np.around(forward_preds[forward_ind], 4)
-            forward_substitutes.append(
-                {
-                    "word": next_word,
-                    "candidates": forward_ind.tolist(),
-                    "candidate_words": forward_words,
-                    "logp": forward_probs.tolist(),
-                }
-            )
+            forward_probs = np.take_along_axis(forward_preds, forward_ind, 1)
+            forward_probs = np.round(forward_probs.astype(float), 4)
 
-            # Next backward token:
-            next_back_word = self.vocab.id_to_word(batch["next_token_id_reverse"][0][0])
+            # Next backward tokens:
+            next_back_words = [self.vocab.id_to_word(t[0]) for t in batch["next_token_id_reverse"]]
             # Top backward predictions:
-            backward_words = [self.vocab.id_to_word(word) for word in backward_ind]
+            backward_words = [[self.vocab.id_to_word(word) for word in row] for row in backward_ind]
             # Top backward prediction probabilities:
-            backward_probs = np.around(backward_preds[backward_ind], 4)
-            backward_substitutes.append(
-                {
-                    "word": next_back_word,
-                    "candidates": backward_ind.tolist(),
-                    "candidate_words": backward_words,
-                    "logp": backward_probs.tolist(),
-                }
-            )
+            backward_probs = np.take_along_axis(backward_preds, backward_ind, 1)
+            backward_probs = np.round(backward_probs.astype(float), 4)
 
+            for nr in range(batch_size):
+                if next_words[nr] == "</S>" and next_back_words[nr] == "<S>":
+                    self.logger.debug(f"End of sentence found for {nr}!")
+                    full_sentence = merge_substitutes(storage[nr])
+                    word_predictions.append(full_sentence)
+                    storage[nr] = ([], [])
+                    continue
+                # forward substitutes for the current sentence:
+                storage[nr][0].append(
+                    {
+                        "word": next_words[nr],
+                        "candidates": forward_ind[nr].tolist(),
+                        "candidate_words": forward_words[nr],
+                        "logp": forward_probs[nr].tolist(),
+                    }
+                )
+                # backward_substitutes for the current sentence:
+                storage[nr][1].append(
+                    {
+                        "word": next_back_words[nr],
+                        "candidates": backward_ind[nr].tolist(),
+                        "candidate_words": backward_words[nr],
+                        "logp": backward_probs[nr].tolist(),
+                    }
+                )
         return word_predictions
 
     def warmup(self, sess, texts):
