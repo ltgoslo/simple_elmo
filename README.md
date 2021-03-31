@@ -37,15 +37,18 @@ However, providing the vocabulary file can slightly increase inference speed whe
 
 ### Optional arguments
 - **max_batch_size**: *integer, default 32*;
-      the maximum number of sentences/documents in a batch during inference;
-      your input will be automatically split into chunks of the respective size;
-      if your computational resources allow, you might want to increase this value.
+
+   the maximum number of sentences/documents in a batch during inference;
+   your input will be automatically split into chunks of the respective size;
+   if your computational resources allow, you might want to increase this value.
 - **limit**: *integer, default 100*;
-the number of words from the vocabulary file to actually cache (counted from the first line). 
-Increase the default value if you are sure these words occur in your training data much more often than 1 or 2 times.
+
+    the number of words from the vocabulary file to actually cache (counted from the first line).
+    Increase the default value if you are sure these words occur in your training data much more often than 1 or 2 times.
 - **full**: *boolean, default False*;
-if True, will try to load the full model from TensorFlow checkpoints, together with the vocabulary.
-Models loaded this way can be used, for language modeling.
+
+    if True, will try to load the full model from TensorFlow checkpoints, together with the vocabulary.
+    Models loaded this way can be used for language modeling.
 
 ## Working with models
  Currently, we provide three methods for loaded models (will be expanded in the future):
@@ -74,9 +77,9 @@ Both these methods can be used with the **layers** argument, which takes one of 
 
 Use these tensors for your downstream tasks.
 
-The `get__elmo_substitutes()` method currently works only with the models loaded  with `full=True`.
-For each input sentences, it  outputs a list of lexical substitutes (LM predictions) for each word token in the sentence, produced by the forward and backward ELMo language models.
-The substitutes are yielded as dictionaries containing the vocabulary identifiers of the most probable LM predictions, their lexical forms and their probabilities.
+The `get_elmo_substitutes()` method currently works only with the models loaded  with `full=True`.
+For each input sentence, it  produces a list of lexical substitutes (LM predictions) for each word token in the sentence, produced by the forward and backward ELMo language models.
+The substitutes are yielded as dictionaries containing the vocabulary identifiers of the most probable LM predictions, their lexical forms and their logit scores.
 NB: this method is still experimental!
 
 # Example scripts
