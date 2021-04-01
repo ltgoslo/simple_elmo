@@ -506,7 +506,7 @@ class LanguageModel(object):
             # softmax_W is just the embedding layer
             self.softmax_W = self.embedding_weights
 
-        with tf.compat.v1.variable_scope("softmax"), tf.device("/cpu:0"):
+        with tf.compat.v1.variable_scope('softmax'):
             # Glorit init (std=(1.0 / sqrt(fan_in))
             softmax_init = tf.compat.v1.random_normal_initializer(
                 0.0, 1.0 / np.sqrt(softmax_dim)
@@ -554,10 +554,8 @@ class LanguageModel(object):
 
                 else:
                     # get the full softmax loss
-                    output_scores = (
-                        tf.matmul(lstm_output_flat, tf.transpose(a=self.softmax_W))
-                        + self.softmax_b
-                    )
+                    output_scores = tf.transpose(
+                        tf.matmul(self.softmax_W, tf.transpose(lstm_output_flat))) + self.softmax_b
                     self.output_scores.append(output_scores)
                     # NOTE: tf.nn.sparse_softmax_cross_entropy_with_logits
                     #   expects unnormalized output since it performs the

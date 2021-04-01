@@ -139,7 +139,7 @@ class ElmoModel:
             config = tf.compat.v1.ConfigProto(allow_soft_placement=True)
             self.session = tf.compat.v1.Session(config=config)
 
-            with tf.device("/cpu:0"), tf.compat.v1.variable_scope("lm"):
+            with tf.compat.v1.variable_scope("lm"):
                 test_options = dict(m_options)
                 test_options["batch_size"] = lm_batch_size
                 test_options["unroll_steps"] = 1
@@ -336,7 +336,9 @@ class ElmoModel:
         if len(data) < batch_size:
             raise SystemError("Batch size must be less than the number of input sentences!")
         word_predictions = []
-        storage = [([], [])] * batch_size
+
+        # For loops and the multiplication operator are not the same in list comprehension:
+        storage = [([], []) for _ in range(batch_size)]
 
         self.logger.info("Calculating language model predictions...")
 
@@ -371,8 +373,8 @@ class ElmoModel:
                         f_el[val] = 0
                         b_el[val] = 0
 
-            forward_ind = np.array([np.flip(el.argsort()[-topn:]) for el in forward_preds])
-            backward_ind = np.array([np.flip(el.argsort()[-topn:]) for el in backward_preds])
+            forward_ind = np.argpartition(forward_preds, -topn)[:, -topn:]
+            backward_ind = np.argpartition(backward_preds, -topn)[:, -topn:]
 
             # End of sentence:
             def merge_substitutes(sentence):
