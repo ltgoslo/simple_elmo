@@ -57,7 +57,7 @@ However, providing the vocabulary file can slightly increase inference speed whe
  
  - `model.get_elmo_vector_average(SENTENCES)`
 
- - `model.get__elmo_substitutes(RAW_SENTENCES)`
+ - `model.get_elmo_substitutes(RAW_SENTENCES)`
 
 `SENTENCES` is a list of input sentences (lists of words).
 `RAW_SENTENCES` is a list of input sentences as strings.
