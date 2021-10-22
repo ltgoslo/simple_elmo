@@ -197,12 +197,13 @@ class ElmoModel:
 
         return "The model is now loaded."
 
-    def get_elmo_vectors(self, texts, warmup=True, layers="average"):
+    def get_elmo_vectors(self, texts, warmup=True, layers="average", session=None):
         """
         :param texts: list of sentences (lists of words)
         :param warmup: warm up the model before actual inference (by running it over the 1st batch)
         :param layers: ["top", "average", "all"].
         Yield the top ELMo layer, the average of all layers, or all layers as they are.
+        :param session: external TensorFlow session to use
         :return: embedding tensor for all sentences
         (number of used layers by max word count by vector size)
         """
@@ -216,7 +217,10 @@ class ElmoModel:
         else:
             final_vectors = np.zeros((len(texts), max_text_length, self.vector_size))
 
-        with tf.compat.v1.Session() as sess:
+        if not session:
+            session = tf.compat.v1.Session()
+
+        with session as sess:
             # Get an op to compute ELMo vectors (a function of the internal biLM layers)
             self.elmo_sentence_input = weight_layers(
                 "input", self.sentence_embeddings_op, use_layers=layers
