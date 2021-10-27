@@ -129,7 +129,9 @@ class ElmoModel:
         self.max_chars = max_chars
         if full:
             if m_options["char_cnn"]["n_characters"] == 262:
-                self.logger.info("Invalid number of characters in the options.json file: 262.")
+                self.logger.info(
+                    "Invalid number of characters in the options.json file: 262."
+                )
                 self.logger.info("Setting it to 261 for using the model as LM")
                 m_options["char_cnn"]["n_characters"] = 261
             self.vocab = load_vocab(vocab_file, self.max_chars)
@@ -216,18 +218,19 @@ class ElmoModel:
             )
         else:
             final_vectors = np.zeros((len(texts), max_text_length, self.vector_size))
-
+        existing_session = True
         if not session:
+            existing_session = False
             session = tf.compat.v1.Session()
+        with session.as_default() as sess:
+            if not existing_session:
+                # Get an op to compute ELMo vectors (a function of the internal biLM layers)
+                self.elmo_sentence_input = weight_layers(
+                    "input", self.sentence_embeddings_op, use_layers=layers
+                )
 
-        with session as sess:
-            # Get an op to compute ELMo vectors (a function of the internal biLM layers)
-            self.elmo_sentence_input = weight_layers(
-                "input", self.sentence_embeddings_op, use_layers=layers
-            )
-
-            # It is necessary to initialize variables once before running inference.
-            sess.run(tf.compat.v1.global_variables_initializer())
+                # It is necessary to initialize variables once before running inference.
+                sess.run(tf.compat.v1.global_variables_initializer())
 
             if warmup:
                 self.warmup(sess, texts)
@@ -248,9 +251,13 @@ class ElmoModel:
                 first_row = self.batch_size * chunk_counter
                 last_row = first_row + elmo_vectors.shape[0]
                 if layers == "all":
-                    final_vectors[first_row:last_row, :, : elmo_vectors.shape[2], :] = elmo_vectors
+                    final_vectors[
+                        first_row:last_row, :, : elmo_vectors.shape[2], :
+                    ] = elmo_vectors
                 else:
-                    final_vectors[first_row:last_row, : elmo_vectors.shape[1], :] = elmo_vectors
+                    final_vectors[
+                        first_row:last_row, : elmo_vectors.shape[1], :
+                    ] = elmo_vectors
                 chunk_counter += 1
 
             return final_vectors
@@ -338,7 +345,9 @@ class ElmoModel:
 
         batch_size = self.batch_size
         if len(data) < batch_size:
-            raise SystemError("Batch size must be less than the number of input sentences!")
+            raise SystemError(
+                "Batch size must be less than the number of input sentences!"
+            )
         word_predictions = []
 
         # For loops and the multiplication operator are not the same in list comprehension:
@@ -361,10 +370,7 @@ class ElmoModel:
                 )
             )
             ret = self.session.run(
-                [
-                    self.final_state_tensors,
-                    self.model.output_scores,
-                ],
+                [self.final_state_tensors, self.model.output_scores,],
                 feed_dict=feed_dict,
             )
 
@@ -386,7 +392,7 @@ class ElmoModel:
                 sentence_substitutes = []
                 backward_substitutes.reverse()
                 for f_position, b_position in zip(
-                        forward_substitutes, backward_substitutes
+                    forward_substitutes, backward_substitutes
                 ):
                     cur_substitute = {
                         "word": f_position["word"],
@@ -404,15 +410,21 @@ class ElmoModel:
             # Next forward tokens:
             next_words = [self.vocab.id_to_word(t[0]) for t in batch["next_token_id"]]
             # Top forward predictions:
-            forward_words = [[self.vocab.id_to_word(word) for word in row] for row in forward_ind]
+            forward_words = [
+                [self.vocab.id_to_word(word) for word in row] for row in forward_ind
+            ]
             # Top forward prediction probabilities:
             forward_probs = np.take_along_axis(forward_preds, forward_ind, 1)
             forward_probs = np.round(forward_probs.astype(float), 4)
 
             # Next backward tokens:
-            next_back_words = [self.vocab.id_to_word(t[0]) for t in batch["next_token_id_reverse"]]
+            next_back_words = [
+                self.vocab.id_to_word(t[0]) for t in batch["next_token_id_reverse"]
+            ]
             # Top backward predictions:
-            backward_words = [[self.vocab.id_to_word(word) for word in row] for row in backward_ind]
+            backward_words = [
+                [self.vocab.id_to_word(word) for word in row] for row in backward_ind
+            ]
             # Top backward prediction probabilities:
             backward_probs = np.take_along_axis(backward_preds, backward_ind, 1)
             backward_probs = np.round(backward_probs.astype(float), 4)
@@ -458,4 +470,4 @@ class ElmoModel:
 
 def divide_chunks(data, n):
     for i in range(0, len(data), n):
-        yield data[i: i + n]
+        yield data[i : i + n]
