@@ -77,6 +77,33 @@ Both these methods can be used with the **layers** argument, which takes one of 
 
 Use these tensors for your downstream tasks.
 
+Another argument for these methods is **session**. 
+It defaults to **None** which means a new TensorFlow session is created automatically when the method is called.
+This is convenient, since one does not have to worry about initializing the computational graph.
+However, in some cases, you might want to re-use an existing session (for example, to call the method multiple times without the initialization overhead).
+
+For this to work, one must do all the initialization manually before the method is called, for example:
+
+```
+import tensorflow as tf
+from simple_elmo import ElmoModel
+
+graph = tf.Graph()
+with graph.as_default() as elmo_graph:
+    elmo_model = ElmoModel()
+    elmo_model.load(PATH_TO_ELMO)
+...
+with elmo_graph.as_default() as current_graph:
+    tf_session = tf.compat.v1.Session(graph=elmo_graph)
+        with tf_session.as_default() as sess:
+            elmo_model.elmo_sentence_input = simple_elmo.elmo.weight_layers("input", elmo_model.sentence_embeddings_op)
+            sess.run(tf.compat.v1.global_variables_initializer())
+...
+elmo_model.get_elmo_vectors(SENTENCES, session=tf_session)
+elmo_model.get_elmo_vectors(SENTENCES2, session=tf_session)
+...
+```
+
 The `get_elmo_substitutes()` method currently works only with the models loaded  with `full=True`.
 For each input sentence, it  produces a list of lexical substitutes (LM predictions) for each word token in the sentence, produced by the forward and backward ELMo language models.
 The substitutes are yielded as dictionaries containing the vocabulary identifiers of the most probable LM predictions, their lexical forms and their logit scores.

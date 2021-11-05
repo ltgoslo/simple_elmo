@@ -252,22 +252,23 @@ class ElmoModel:
                 last_row = first_row + elmo_vectors.shape[0]
                 if layers == "all":
                     final_vectors[
-                        first_row:last_row, :, : elmo_vectors.shape[2], :
+                    first_row:last_row, :, : elmo_vectors.shape[2], :
                     ] = elmo_vectors
                 else:
                     final_vectors[
-                        first_row:last_row, : elmo_vectors.shape[1], :
+                    first_row:last_row, : elmo_vectors.shape[1], :
                     ] = elmo_vectors
                 chunk_counter += 1
 
             return final_vectors
 
-    def get_elmo_vector_average(self, texts, warmup=True, layers="average"):
+    def get_elmo_vector_average(self, texts, warmup=True, layers="average", session=None):
         """
         :param texts: list of sentences (lists of words)
         :param warmup: warm up the model before actual inference (by running it over the 1st batch)
         :param layers: ["top", "average", "all"].
         Yield the top ELMo layer, the average of all layers, or all layers as they are.
+        :param session: external TensorFlow session to use
         :return: matrix of averaged embeddings for all sentences
         """
 
@@ -278,14 +279,20 @@ class ElmoModel:
 
         counter = 0
 
-        with tf.compat.v1.Session() as sess:
-            # Get an op to compute ELMo vectors (a function of the internal biLM layers)
-            self.elmo_sentence_input = weight_layers(
-                "input", self.sentence_embeddings_op, use_layers=layers
-            )
+        existing_session = True
+        if not session:
+            existing_session = False
+            session = tf.compat.v1.Session()
 
-            # It is necessary to initialize variables once before running inference.
-            sess.run(tf.compat.v1.global_variables_initializer())
+        with session.as_default() as sess:
+            if not existing_session:
+                # Get an op to compute ELMo vectors (a function of the internal biLM layers)
+                self.elmo_sentence_input = weight_layers(
+                    "input", self.sentence_embeddings_op, use_layers=layers
+                )
+
+                # It is necessary to initialize variables once before running inference.
+                sess.run(tf.compat.v1.global_variables_initializer())
 
             if warmup:
                 self.warmup(sess, texts)
@@ -370,7 +377,7 @@ class ElmoModel:
                 )
             )
             ret = self.session.run(
-                [self.final_state_tensors, self.model.output_scores,],
+                [self.final_state_tensors, self.model.output_scores, ],
                 feed_dict=feed_dict,
             )
 
@@ -392,7 +399,7 @@ class ElmoModel:
                 sentence_substitutes = []
                 backward_substitutes.reverse()
                 for f_position, b_position in zip(
-                    forward_substitutes, backward_substitutes
+                        forward_substitutes, backward_substitutes
                 ):
                     cur_substitute = {
                         "word": f_position["word"],
@@ -470,4 +477,4 @@ class ElmoModel:
 
 def divide_chunks(data, n):
     for i in range(0, len(data), n):
-        yield data[i : i + n]
+        yield data[i: i + n]
