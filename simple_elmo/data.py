@@ -13,7 +13,7 @@ class Vocabulary(object):
     a method for encoding text to a sequence of ids.
     """
 
-    def __init__(self, filename, validate_file=False, limit=None):
+    def __init__(self, filename, validate_file=False, limit=None, from_zip=False):
         """
         filename: the vocabulary file.  It is a flat text file with one
             (normalized) token per line.  In addition, the file should also
@@ -26,9 +26,11 @@ class Vocabulary(object):
         self._unk = -1
         self._bos = -1
         self._eos = -1
-
         if filename:
-            vocab_source = open(filename, 'r')  # Loading vocabulary from file
+            if from_zip:
+                vocab_source = filename.split("\n")  # Loading vocabulary from ZIP archive
+            else:
+                vocab_source = open(filename, 'r')  # Loading vocabulary from file
         else:
             logging.info("No vocabulary file provided; using special tokens only.")
             vocab_source = ["<S>", "</S>", "<UNK>"]  # Creating a toy vocabulary ourselves
@@ -206,7 +208,7 @@ class Batcher(object):
     Batch sentences of tokenized text into character id matrices.
     """
 
-    def __init__(self, lm_vocab_file: str, max_token_length: int, limit=None):
+    def __init__(self, lm_vocab_file: str, max_token_length: int, limit=None, from_zip=False):
         """
         :param lm_vocab_file: the language model vocabulary file (one line per
             token)
@@ -214,7 +216,7 @@ class Batcher(object):
         :param limit: used at inference time to cache only top frequent tokens
         """
         self._lm_vocab = UnicodeCharsVocabulary(
-            lm_vocab_file, max_token_length, limit=limit)
+            lm_vocab_file, max_token_length, limit=limit, from_zip=from_zip)
         self._max_token_length = max_token_length
 
     def batch_sentences(self, sentences: List[List[str]]):

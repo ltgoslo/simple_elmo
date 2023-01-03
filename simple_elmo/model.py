@@ -15,7 +15,7 @@ DTYPE_INT = 'int64'
 class BidirectionalLanguageModel(object):
     def __init__(
             self,
-            options_file: (str, ZipExtFile),
+            options_file: (str, ZipExtFile, dict),
             weight_file: str,
             use_character_inputs=True,
             embedding_weight_file=None,
@@ -44,6 +44,8 @@ class BidirectionalLanguageModel(object):
         if type(options_file) == ZipExtFile:
             options = json.load(options_file)
             options_file.seek(0)
+        elif type(options_file) == dict:
+            options = options_file
         else:
             with open(options_file, 'r') as of:
                 options = json.load(of)
@@ -653,7 +655,6 @@ def dump_token_embeddings(vocab_file, options_file, weight_file, outfile):
 
 def dump_bilm_embeddings(vocab_file, dataset_file, options_file,
                          weight_file, outfile):
-
     if type(options_file) == ZipExtFile:
         options = json.load(options_file)
         options_file.seek(0)

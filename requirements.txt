@@ -1,5 +1,5 @@
 scipy
-tensorflow > 1.14
+tensorflow >= 1.15
 pandas
 scikit-learn
 h5py

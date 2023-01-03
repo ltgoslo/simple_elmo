@@ -81,11 +81,10 @@ class ElmoModel:
                     "Error: loading models from ZIP archives requires Python >= 3.7."
                 )
             zf = zipfile.ZipFile(directory)
-            vocab_file = zf.open("vocab.txt")
-            options_file = zf.open("options.json")
+            vocab_file = zf.read("vocab.txt").decode("utf-8")
+            options_file = zf.read("options.json").decode("utf-8")
             weight_file = zf.open("model.hdf5")
-            m_options = json.load(options_file)
-            options_file.seek(0)
+            m_options = json.loads(options_file)
         elif os.path.isdir(directory):
             # We have all the files already extracted in a separate directory
             options_file = os.path.join(directory, "options.json")
@@ -177,19 +176,25 @@ class ElmoModel:
                     "Error: invalid number of characters in the options.json file: 261. "
                     "Set n_characters to 262 for inference."
                 )
-
             # Create a Batcher to map text to character ids.
-            self.batcher = Batcher(vocab_file, max_chars, limit=limit)
+            if os.path.isfile(directory) and directory.endswith(".zip"):
+                self.batcher = Batcher(vocab_file, max_chars, limit=limit, from_zip=True)
+            else:
+                self.batcher = Batcher(vocab_file, max_chars, limit=limit)
 
             # Input placeholders to the biLM.
             self.sentence_character_ids = tf.compat.v1.placeholder(
                 "int32", shape=(None, None, max_chars)
             )
-
             # Build the biLM graph.
-            bilm = BidirectionalLanguageModel(
-                options_file, weight_file, max_batch_size=max_batch_size
-            )
+            if os.path.isfile(directory) and directory.endswith(".zip"):
+                bilm = BidirectionalLanguageModel(
+                    m_options, weight_file, max_batch_size=max_batch_size
+                )
+            else:
+                bilm = BidirectionalLanguageModel(
+                    options_file, weight_file, max_batch_size=max_batch_size
+                )
 
             # Get ops to compute the LM embeddings.
             self.sentence_embeddings_op = bilm(self.sentence_character_ids)
