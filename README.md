@@ -1,4 +1,4 @@
-_Simple_elmo_ is a Python library to work with pre-trained [ELMo embeddings](https://allennlp.org/elmo) in TensorFlow.
+_Simple_elmo_ is a Python library to work with pre-trained [ELMo contextualized language models](https://allennlp.org/elmo) in TensorFlow.
 
 This is a significantly updated wrapper to the [original ELMo implementation](https://github.com/allenai/bilm-tf).
 The main changes are:
@@ -9,7 +9,7 @@ The main changes are:
 
 `pip install --upgrade simple_elmo`
 
-Make sure to update the package regularly, we are actively developing.
+Make sure to update the package regularly.
 
 # Usage
 
@@ -18,7 +18,7 @@ Make sure to update the package regularly, we are actively developing.
  `model = ElmoModel()`
 
 ## Loading
- First, let's load a pretrained model from disk:
+ First, let's load a pretrained model:
 
  `model.load(PATH_TO_ELMO)`
 
@@ -44,7 +44,7 @@ However, providing the vocabulary file can slightly increase inference speed whe
 - **limit**: *integer, default 100*;
 
     the number of words from the vocabulary file to actually cache (counted from the first line).
-    Increase the default value if you are sure these words occur in your training data much more often than 1 or 2 times.
+    Increase the default value if you are sure these words occur in your data much more often than 1 or 2 times.
 - **full**: *boolean, default False*;
 
     if True, will try to load the full model from TensorFlow checkpoints, together with the vocabulary.
@@ -176,4 +176,4 @@ Meaniwhile, these warnings can be ignored: they do not harm the resulting embedd
 
 Currently we provide ELMo training code (updated and improved in the same way compared to the original implementation)
 in a [separate repository](https://github.com/ltgoslo/simple_elmo_training).
-It will be integrated into the _simple_elmo_ package in the nearest future.
+It will be integrated into the _simple_elmo_ package at some point.

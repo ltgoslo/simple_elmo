@@ -81,7 +81,10 @@ class ElmoModel:
                     "Error: loading models from ZIP archives requires Python >= 3.7."
                 )
             zf = zipfile.ZipFile(directory)
-            vocab_file = zf.read("vocab.txt").decode("utf-8")
+            if "vocab.txt" in zf.namelist():
+                vocab_file = zf.read("vocab.txt").decode("utf-8")
+            else:
+                vocab_file = None
             options_file = zf.read("options.json").decode("utf-8")
             weight_file = zf.open("model.hdf5")
             m_options = json.loads(options_file)
